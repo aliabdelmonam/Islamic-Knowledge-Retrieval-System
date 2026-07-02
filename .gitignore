@@ -86,3 +86,4 @@ yarn-error.log
 
 # DB
 chroma_db/
+qdrant_storage/
