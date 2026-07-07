@@ -1,0 +1,1056 @@
+/* ==========================================================================
+   Noor Al-Hidayah CSS Stylesheet
+   Designed for premium Islamic-themed Dark UI
+   Fonts: Alexandria (Titles), IBM Plex Sans Arabic (Body)
+   ========================================================================== */
+
+/* reset & design tokens */
+:root {
+    --bg-main: #060503;
+    --bg-sidebar: #0f0b07;
+    --bg-card: rgba(25, 20, 15, 0.6);
+    --border-color: rgba(204, 164, 108, 0.15);
+    --border-color-active: rgba(204, 164, 108, 0.35);
+    
+    --text-primary: #f0e6d2;
+    --text-secondary: #a39580;
+    --text-muted: #6e6250;
+    
+    --gold-primary: #cca46c;
+    --gold-bright: #e5c18b;
+    --gold-dark: #8c6a3f;
+    --gold-gradient: linear-gradient(135deg, #cca46c, #e5c18b, #ab824b);
+    
+    --success: #3c7a52;
+    --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+    --glow: 0 0 15px rgba(204, 164, 108, 0.2);
+    
+    --font-body: 'IBM Plex Sans Arabic', sans-serif;
+    --font-title: 'Alexandria', sans-serif;
+}
+
+/* light theme tokens overrides if checkbox turned off */
+body.light-theme {
+    --bg-main: #fcfbfa;
+    --bg-sidebar: #f5f2eb;
+    --bg-card: rgba(255, 253, 250, 0.85);
+    --border-color: rgba(140, 106, 63, 0.15);
+    --border-color-active: rgba(140, 106, 63, 0.4);
+    
+    --text-primary: #2d261e;
+    --text-secondary: #6e6250;
+    --text-muted: #9e917d;
+    
+    --gold-primary: #8c6a3f;
+    --gold-bright: #ad8a5b;
+    --gold-dark: #5e4424;
+    --gold-gradient: linear-gradient(135deg, #8c6a3f, #ad8a5b, #5e4424);
+    
+    --success: #2b5c3b;
+    --shadow: 0 8px 24px rgba(140, 106, 63, 0.08);
+    --glow: 0 0 10px rgba(140, 106, 63, 0.1);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    height: 100vh;
+    overflow: hidden;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* --- Container App --- */
+.app-container {
+    display: flex;
+    flex-direction: row;
+    width: 100vw;
+    height: 100vh;
+}
+
+/* ==========================================================================
+   LEFT COLUMN (Widgets Sidebar)
+   ========================================================================== */
+.left-column {
+    width: 320px;
+    background-color: var(--bg-sidebar);
+    border-right: 1px solid var(--border-color);
+    padding: 24px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color) transparent;
+}
+
+.left-column::-webkit-scrollbar {
+    width: 4px;
+}
+
+.left-column::-webkit-scrollbar-thumb {
+    background-color: var(--border-color);
+    border-radius: 4px;
+}
+
+/* Card base */
+.card {
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-color);
+    border-radius: 18px;
+    padding: 16px;
+    box-shadow: var(--shadow);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    border-color: var(--border-color-active);
+}
+
+/* Widget Header */
+.widget-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.header-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-title);
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--gold-primary);
+}
+
+.widget-icon {
+    width: 18px;
+    height: 18px;
+    stroke: var(--gold-primary);
+}
+
+/* Location details */
+.location-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    font-size: 12px;
+}
+
+.city-name {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.hijri-date {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--text-secondary);
+}
+
+.date-icon {
+    width: 12px;
+    height: 12px;
+}
+
+/* Prayer Times List */
+.prayer-times-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.prayer-time-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
+}
+
+.prayer-time-item.active {
+    background: rgba(204, 164, 108, 0.12);
+    color: var(--gold-bright);
+    font-weight: 600;
+    border: 1px solid var(--border-color-active);
+}
+
+/* text buttons */
+.btn-text {
+    background: none;
+    border: none;
+    color: var(--gold-primary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-family: var(--font-body);
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 10px;
+    width: 100%;
+    justify-content: center;
+    padding: 6px;
+    transition: color 0.2s;
+}
+
+.btn-text:hover {
+    color: var(--gold-bright);
+}
+
+.btn-text svg {
+    margin-left: -2px;
+    transform: rotate(180deg);
+}
+
+/* Qibla Compass Widget */
+.qibla-compass-container {
+    display: flex;
+    justify-content: center;
+    margin: 15px 0;
+}
+
+.compass-ring {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    border: 2px dashed var(--border-color-active);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    background: rgba(25, 20, 15, 0.3);
+}
+
+.compass-dial {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    border: 1px solid var(--border-color);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: rotate(-15deg); /* Default rotation to mock Qibla direction */
+}
+
+.compass-pointer {
+    position: absolute;
+    width: 3px;
+    height: 45px;
+    background: var(--gold-gradient);
+    top: 5px;
+    border-radius: 2px;
+}
+
+.compass-pointer::before {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: -3px;
+    width: 9px;
+    height: 9px;
+    background: var(--gold-bright);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--gold-bright);
+}
+
+.kaaba-icon-wrapper {
+    width: 32px;
+    height: 32px;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.kaaba-svg {
+    width: 24px;
+    height: 24px;
+}
+
+.qibla-caption {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+}
+
+.qibla-sub {
+    color: var(--text-muted);
+}
+
+.qibla-loc {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.loc-pin {
+    width: 12px;
+    height: 12px;
+    stroke: var(--gold-primary);
+}
+
+/* Quote slider */
+.quote-slider-widget {
+    margin-top: auto;
+    text-align: center;
+    padding: 20px 14px;
+    background: linear-gradient(180deg, var(--bg-card) 0%, rgba(204, 164, 108, 0.03) 100%);
+}
+
+.quote-text {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--gold-bright);
+    line-height: 1.6;
+    margin-bottom: 8px;
+    font-family: var(--font-title);
+}
+
+.quote-source {
+    font-size: 11px;
+    color: var(--text-muted);
+    display: block;
+}
+
+.slider-dots {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 12px;
+}
+
+.circle-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background-color: var(--text-muted);
+    opacity: 0.5;
+    cursor: pointer;
+}
+
+.circle-dot.active {
+    background-color: var(--gold-primary);
+    opacity: 1;
+    width: 14px;
+    border-radius: 3px;
+}
+
+/* ==========================================================================
+   CENTER COLUMN (Chat Viewport & Background Arch)
+   ========================================================================== */
+.center-column {
+    flex-grow: 1;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--bg-main);
+}
+
+/* Arched Mosque Window Background overlay */
+.mosque-arch-background {
+    position: absolute;
+    top: 5%;
+    left: 5%;
+    right: 5%;
+    bottom: 25%;
+    opacity: 0.18;
+    pointer-events: none;
+    z-index: 0;
+    
+    /* Arch Outline SVG */
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 700" fill="none"><path d="M300,50 C410,250 500,320 500,480 L500,700 L100,700 L100,480 C100,320 190,250 300,50 Z" stroke="%23cca46c" stroke-width="2" fill="none"/><path d="M300,70 C395,260 480,325 480,480 L480,680 L120,680 L120,480 C120,325 205,260 300,70 Z" stroke="%23cca46c" stroke-opacity="0.5" stroke-dasharray="10 5" stroke-width="1" fill="none"/></svg>');
+    background-repeat: no-repeat;
+    background-position: center bottom;
+    background-size: contain;
+}
+
+.chat-viewport {
+    flex-grow: 1;
+    padding: 30px;
+    overflow-y: auto;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color) transparent;
+}
+
+.chat-viewport::-webkit-scrollbar {
+    width: 4px;
+}
+
+.chat-viewport::-webkit-scrollbar-thumb {
+    background-color: var(--border-color);
+}
+
+/* Welcome state */
+.chat-welcome-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
+    margin: auto 0;
+    width: 100%;
+}
+
+.welcome-heading {
+    text-align: center;
+}
+
+.welcome-title {
+    font-family: var(--font-title);
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.welcome-leaf {
+    width: 32px;
+    height: 32px;
+    color: var(--gold-primary);
+}
+
+.welcome-subtitle {
+    font-size: 16px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+/* Sample Card mockup */
+.sample-search-card {
+    max-width: 680px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.sample-search-query {
+    align-self: flex-end;
+    background: rgba(25, 20, 15, 0.4);
+    border: 1px solid var(--border-color);
+    border-radius: 16px 16px 2px 16px;
+    padding: 12px 18px;
+    font-size: 14px;
+    color: var(--text-primary);
+    max-width: 80%;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.sample-search-query .timestamp {
+    font-size: 10px;
+    color: var(--gold-primary);
+    align-self: flex-end;
+}
+
+.sample-result-response {
+    display: flex;
+    gap: 12px;
+    align-self: flex-start;
+    max-width: 85%;
+}
+
+.bot-avatar-badge {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--border-color-active);
+    background: var(--bg-sidebar);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 4px;
+}
+
+.avatar-svg {
+    width: 20px;
+    height: 20px;
+    color: var(--gold-primary);
+}
+
+.response-content {
+    background: rgba(25, 20, 15, 0.7);
+    border: 1px solid var(--border-color-active);
+    border-radius: 16px 16px 16px 2px;
+    padding: 18px;
+    font-size: 14px;
+    line-height: 1.7;
+    position: relative;
+    box-shadow: var(--shadow);
+}
+
+.response-lead {
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+}
+
+/* Calligraphic Quran Quran block */
+.quran-quote-block {
+    border: 1px solid var(--border-color-active);
+    background: rgba(204, 164, 108, 0.03);
+    border-radius: 12px;
+    padding: 16px;
+    margin: 12px 0;
+    text-align: center;
+    position: relative;
+}
+
+.ayah-arabic {
+    font-family: var(--font-title);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--gold-bright);
+    margin-bottom: 8px;
+    text-shadow: 0 0 10px rgba(229, 193, 139, 0.2);
+}
+
+.ayah-translation {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    font-style: italic;
+}
+
+.ayah-citation {
+    font-size: 10px;
+    color: var(--gold-primary);
+    font-weight: 600;
+}
+
+.response-follow {
+    color: var(--text-primary);
+}
+
+.response-content .timestamp {
+    display: block;
+    text-align: left;
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 8px;
+}
+
+/* Dynamic Stream styling */
+.chat-message-stream {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-width: 780px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.chat-bubble {
+    display: flex;
+    gap: 12px;
+    max-width: 85%;
+    animation: fadeInUp 0.4s ease forwards;
+}
+
+.chat-bubble.user {
+    align-self: flex-end;
+    flex-direction: row-reverse;
+}
+
+.chat-bubble.assistant {
+    align-self: flex-start;
+}
+
+.chat-bubble .text-wrapper {
+    padding: 14px 18px;
+    border-radius: 16px;
+    font-size: 14px;
+    line-height: 1.6;
+    position: relative;
+    box-shadow: var(--shadow);
+}
+
+.chat-bubble.user .text-wrapper {
+    background: rgba(204, 164, 108, 0.08);
+    border: 1px solid var(--border-color-active);
+    color: var(--text-primary);
+    border-top-left-radius: 2px;
+}
+
+.chat-bubble.assistant .text-wrapper {
+    background: rgba(25, 20, 15, 0.7);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    border-top-right-radius: 2px;
+}
+
+.source-document-details {
+    margin-top: 14px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 10px;
+}
+
+.sources-title {
+    font-size: 11px;
+    color: var(--gold-primary);
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.source-item {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    padding-right: 6px;
+    border-right: 2px solid var(--gold-primary);
+}
+
+.source-item strong {
+    color: var(--text-secondary);
+}
+
+/* Loading dots state */
+.chat-loading {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+}
+
+.dot {
+    width: 6px;
+    height: 6px;
+    background-color: var(--gold-primary);
+    border-radius: 50%;
+    animation: wave 1.2s infinite ease-in-out;
+}
+
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* --- Footer Area --- */
+.chat-footer {
+    padding: 20px 30px;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 780px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+/* suggestion chips */
+.suggestion-chips {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+}
+
+.suggestion-chips::-webkit-scrollbar {
+    display: none;
+}
+
+.chip-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.chip-btn {
+    background: rgba(25, 20, 15, 0.4);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 8px 14px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-family: var(--font-body);
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.chip-btn:hover {
+    border-color: var(--gold-bright);
+    background: rgba(204, 164, 108, 0.06);
+    color: var(--gold-bright);
+}
+
+.chip-icon {
+    width: 12px;
+    height: 12px;
+    stroke: var(--text-muted);
+    transition: stroke 0.2s;
+}
+
+.chip-btn:hover .chip-icon {
+    stroke: var(--gold-primary);
+}
+
+/* Input Form */
+.chat-input-container {
+    background: rgba(25, 20, 15, 0.65);
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow);
+}
+
+.chat-input-container:focus-within {
+    border-color: var(--gold-bright);
+    box-shadow: var(--glow), var(--shadow);
+}
+
+.chat-input {
+    flex-grow: 1;
+    background: none;
+    border: none;
+    outline: none;
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--text-primary);
+    padding: 6px 14px;
+}
+
+.chat-input::placeholder {
+    color: var(--text-muted);
+}
+
+.input-action-btn {
+    background: none;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    color: var(--text-secondary);
+    padding: 8px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.input-action-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--gold-bright);
+}
+
+.input-action-btn.active {
+    color: var(--gold-bright);
+    background: rgba(204, 164, 108, 0.1);
+}
+
+.action-icon {
+    width: 20px;
+    height: 20px;
+}
+
+.send-btn {
+    background: var(--gold-gradient);
+    border: none;
+    outline: none;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    transition: transform 0.2s ease, filter 0.2s;
+}
+
+.send-btn:hover {
+    transform: scale(1.05);
+    filter: brightness(1.1);
+}
+
+.send-icon {
+    width: 16px;
+    height: 16px;
+    stroke: #25160b;
+    margin-right: 2px;
+}
+
+.assistant-disclaimer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.shield-check {
+    width: 14px;
+    height: 14px;
+    stroke: var(--gold-primary);
+}
+
+/* ==========================================================================
+   RIGHT COLUMN (Sidebar Navigation)
+   ========================================================================== */
+.right-column {
+    width: 280px;
+    background-color: var(--bg-sidebar);
+    border-left: 1px solid var(--border-color);
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+/* Brand logo */
+.app-brand {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.logo-wrapper {
+    display: inline-block;
+    position: relative;
+    margin-bottom: 6px;
+}
+
+.app-logo {
+    width: 60px;
+    height: 60px;
+    filter: drop-shadow(0 0 10px rgba(204, 164, 108, 0.15));
+    animation: float 4s ease-in-out infinite;
+}
+
+.brand-title {
+    font-family: var(--font-title);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--gold-bright);
+    margin-bottom: 2px;
+    letter-spacing: 0.5px;
+}
+
+.brand-slogan {
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+/* Sidebar Nav Menu */
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex-grow: 1;
+    overflow-y: auto;
+    padding-bottom: 60px;
+    scrollbar-width: none;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+    display: none;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    text-decoration: none;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.nav-item:hover {
+    background: rgba(204, 164, 108, 0.04);
+    color: var(--gold-bright);
+}
+
+.nav-item.active {
+    background: rgba(204, 164, 108, 0.08);
+    border: 1px solid var(--border-color);
+    color: var(--gold-bright);
+    font-weight: 600;
+}
+
+.nav-icon {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    transition: transform 0.2s;
+}
+
+.nav-item:hover .nav-icon {
+    transform: scale(1.05);
+}
+
+/* Sidebar Footer & Mosque silhouette */
+.sidebar-footer {
+    margin-top: auto;
+    position: relative;
+    z-index: 2;
+    padding-top: 15px;
+}
+
+.mosque-silhouette {
+    position: absolute;
+    bottom: 35px;
+    left: 0;
+    right: 0;
+    height: 70px;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 80" fill="none"><path d="M0,80 L280,80 L280,75 L260,70 L260,30 L250,20 L240,30 L240,65 L220,60 L200,30 C200,30 200,10 180,10 C160,10 160,30 160,30 L160,55 L150,55 L150,5 L140,0 L130,5 L130,55 L80,55 C80,55 80,25 60,25 C40,25 40,55 40,55 L20,62 L20,30 L10,20 L0,30 Z" fill="%23cca46c" fill-opacity="0.04"/></svg>');
+    background-repeat: no-repeat;
+    background-position: center bottom;
+    background-size: 100% auto;
+    pointer-events: none;
+    z-index: 0;
+}
+
+body.light-theme .mosque-silhouette {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 80" fill="none"><path d="M0,80 L280,80 L280,75 L260,70 L260,30 L250,20 L240,30 L240,65 L220,60 L200,30 C200,30 200,10 180,10 C160,10 160,30 160,30 L160,55 L150,55 L150,5 L140,0 L130,5 L130,55 L80,55 C80,55 80,25 60,25 C40,25 40,55 40,55 L20,62 L20,30 L10,20 L0,30 Z" fill="%238c6a3f" fill-opacity="0.05"/></svg>');
+}
+
+.theme-switch-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--border-color);
+    padding-top: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+/* Switch Toggle Styling */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 34px;
+    height: 18px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--text-muted);
+    transition: .3s;
+}
+
+.slider::before {
+    position: absolute;
+    content: "";
+    height: 12px;
+    width: 12px;
+    left: 3px;
+    bottom: 3px;
+    background-color: var(--bg-sidebar);
+    transition: .3s;
+}
+
+input:checked + .slider {
+    background-color: var(--gold-primary);
+}
+
+input:checked + .slider::before {
+    transform: translateX(16px);
+    background-color: var(--bg-main);
+}
+
+.slider.round {
+    border-radius: 34px;
+}
+
+.slider.round::before {
+    border-radius: 50%;
+}
+
+.sun-moon-icon {
+    width: 14px;
+    height: 14px;
+    color: var(--text-secondary);
+}
+
+/* ==========================================================================
+   ANIMATIONS
+   ========================================================================== */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes wave {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-5px) rotate(1deg); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+    .left-column {
+        display: none; /* Hide widgets on smaller tablets */
+    }
+}
+
+@media (max-width: 768px) {
+    .right-column {
+        display: none; /* Hide sidebar on mobile */
+    }
+    .chat-viewport {
+        padding: 15px;
+    }
+    .chat-footer {
+        padding: 15px;
+    }
+}
