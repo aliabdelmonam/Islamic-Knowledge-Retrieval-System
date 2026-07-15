@@ -11,6 +11,8 @@ from pathlib import Path
 from langchain_core.documents import Document
 from transformers import AutoTokenizer
 
+from app.services.category_utils import parse_high_level_categories
+
 logger = logging.getLogger(__name__)
 
 
@@ -54,6 +56,12 @@ def build_child_chunks(
 
     for parent_id, parent_doc in enumerate(raw_docs):
         parent_store.append(parent_doc)
+
+        # Extract high-level categories from parent metadata
+        high_level_cats = parse_high_level_categories(
+            parent_doc.metadata.get("categories")
+        )
+
         for local_idx, chunk_text in enumerate(
             split_by_tokens(tokenizer, parent_doc.page_content, chunk_size, chunk_overlap)
         ):
@@ -62,6 +70,7 @@ def build_child_chunks(
                 "idx": global_idx,
                 "parent_id": parent_id,
                 "chunk_index": local_idx,
+                "high_level_categories": high_level_cats,
                 **parent_doc.metadata,
             }
             child_docs.append(Document(page_content=chunk_text, metadata=child_meta))

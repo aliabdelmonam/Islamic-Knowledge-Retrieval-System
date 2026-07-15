@@ -56,6 +56,11 @@ class Settings(BaseSettings):
     lambda_mult: float = 0.5
     hybrid_alpha: float = 0.7           # 0=BM25 only, 1=dense only
 
+    # ── Category Retriever ─────────────────────────────────────────────────
+    category_csv: Path = Path("data/main_categories_description.csv")
+    category_collection_name: str = "hadith_categories"
+    category_top_k: int = 5              # categories to match per query
+
     # ── Reranker ───────────────────────────────────────────────────────────────
     reranker_model: str = "Omartificial-Intelligence-Space/ARA-Reranker-V1"
     reranker_max_length: int = 512
@@ -65,7 +70,7 @@ class Settings(BaseSettings):
     llm_provider: Literal[
         "openai", "ollama", "groq", "huggingface", "huggingface_local", "fanar", "sbg"
     ] = "sbg"
-    sbg_model_id: str = "openai.gpt-oss-20b-1:0"
+    sbg_model_id: str = "openai.gpt-oss-120b-1:0"
     sbg_base_url: str = "http://apiaccess.iti.net.eg/api/v1"
     sbg_api_key: str | None = None
 
@@ -122,6 +127,8 @@ class Settings(BaseSettings):
             self.models_dir = root / self.models_dir
         if not self.chroma_dir.is_absolute():
             self.chroma_dir = root / self.chroma_dir
+        if not self.category_csv.is_absolute():
+            self.category_csv = root / self.category_csv
         self.models_dir.mkdir(parents=True, exist_ok=True)
         return self
 

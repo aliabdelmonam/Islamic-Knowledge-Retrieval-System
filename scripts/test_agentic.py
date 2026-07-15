@@ -44,7 +44,8 @@ logger = logging.getLogger("test_agentic")
 TEST_QUERIES = [
     # "ما هي العبادة",
     # "بكم يجوز أن يتصدق الأنسان من ماله قبل موته؟",
-    "ينفع اقعد مع بنت الجيران لوحدنا ؟"
+    # "ينفع اقعد مع بنت الجيران لوحدنا ؟"
+    "اعمل اية لو الدبانة وقعت في كوباية شاي؟"
 ]
 
 
@@ -116,6 +117,7 @@ def load_components():
         all_chunks=all_chunks,
         parent_store=parent_store,
         reranker=reranker,
+        qdrant_client=client,
     )
 
 
@@ -149,6 +151,10 @@ def main():
         all_chunks=components["all_chunks"],
         parent_store=components["parent_store"],
         reranker=components["reranker"],
+        qdrant_client=components["qdrant_client"],
+        embedding_model_name=settings.embedding_model,
+        category_collection_name=settings.category_collection_name,
+        category_top_k=settings.category_top_k,
         k=settings.retriever_k,
         fetch_k=settings.retriever_fetch_k,
         system_role=settings.system_role,

@@ -49,7 +49,23 @@ async def lifespan(app: FastAPI):
     app.state.vectorstore = get_vectorstore(
         client, app.state.embeddings, settings.collection_name
     )
-    logger.info("[2/6] Qdrant vector store ready.")
+    logger.info("[2/7] Qdrant vector store ready.")
+
+    # 2b. Category collection (for multi-stage retrieval)
+    try:
+        cat_info = client.get_collection(settings.category_collection_name)
+        app.state.category_collection_ready = (cat_info.points_count or 0) > 0
+    except Exception:
+        app.state.category_collection_ready = False
+
+    if app.state.category_collection_ready:
+        logger.info("[2b/7] Category collection '%s' available.", settings.category_collection_name)
+    else:
+        logger.warning(
+            "[2b/7] Category collection '%s' not found — "
+            "run `python scripts/init_category_index.py` to enable multi-stage retrieval.",
+            settings.category_collection_name,
+        )
 
     # 3. Load child chunks + parent store from disk
     parent_store_path = settings.models_dir / "parent_store.pkl"
@@ -66,7 +82,7 @@ async def lifespan(app: FastAPI):
     with open(chunks_path, "rb") as f:
         app.state.all_chunks = pickle.load(f)
     logger.info(
-        "[3/6] Loaded %d parents, %d child chunks.",
+        "[3/7] Loaded %d parents, %d child chunks.",
         len(app.state.parent_store),
         len(app.state.all_chunks),
     )
@@ -74,14 +90,14 @@ async def lifespan(app: FastAPI):
     # 4. BM25 index
     from app.services.bm25_index import load_bm25
     app.state.bm25_index = load_bm25(settings.models_dir / "bm25_index.pkl")
-    logger.info("[4/6] BM25 index ready.")
+    logger.info("[4/7] BM25 index ready.")
 
     # 5. Reranker
     from app.services.reranker import get_reranker
     app.state.reranker = get_reranker(
         settings.reranker_model, settings.reranker_max_length
     )
-    logger.info("[5/6] Reranker ready.")
+    logger.info("[5/7] Reranker ready.")
 
     # 6. LLM + RAG chain
     from app.services.llm import build_llm
@@ -106,7 +122,7 @@ async def lifespan(app: FastAPI):
     )
     app.state.llm = llm
     app.state.rag_chain = build_rag_chain(llm, settings.system_role)
-    logger.info("[6/6] LLM and RAG chain ready.")
+    logger.info("[6/7] LLM and RAG chain ready.")
 
     logger.info("=== Hadith RAG API ready to serve requests ===")
     yield

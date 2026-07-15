@@ -25,11 +25,11 @@ from langchain_core.prompts import ChatPromptTemplate
 from langgraph.graph import END, START, StateGraph
 
 from app.services.chain import ask, build_rag_chain, format_docs
-from app.services.retriever import RetrievedResult, retrieve
+from app.services.retriever import RetrievedResult, retrieve, retrieve_with_category_filter
 
 logger = logging.getLogger(__name__)
 
-MAX_LOOPS = 1  # Maximum retrieve-rewrite cycles before forcing generation
+MAX_LOOPS = 3  # Maximum retrieve-rewrite cycles before forcing generation
 
 
 # ── Agent State ────────────────────────────────────────────────────────────────
@@ -75,20 +75,54 @@ _REWRITE_PROMPT = ChatPromptTemplate.from_messages(
     [
         (
             "system",
-            "أنت خبير في صياغة استعلامات البحث الإسلامي.\n"
-            "المستخدم طرح سؤالاً ولم نعثر على أحاديث كافية.\n"
-            "أعد صياغة السؤال بأسلوب أوسع أو مختلف لتحسين نتائج البحث.\n"
-            "يمكنك استخدام مرادفات أو مفاهيم أشمل من مجال الفقه والحديث.\n\n"
-            "الاستعلامات التي جُرّبت سابقاً ولم تأتِ بنتائج جيدة:\n"
-            "{tried_queries}\n\n"
-            "الأحاديث التي استُرجعت سابقاً (لمعرفة ما تم تغطيته):\n"
-            "{retrieval_history}\n\n"
-            "أعطِ الاستعلام الجديد فقط، بدون أي شرح.",
+            """
+أنت خبير في العلوم الإسلامية وبناء استعلامات البحث.
+
+هدفك ليس إعادة صياغة السؤال فقط، بل إنشاء استعلام جديد يزيد احتمال العثور
+على الأحاديث المناسبة.
+
+اتبع الخطوات التالية داخلياً:
+
+1. استخرج المفهوم الإسلامي الأساسي في السؤال.
+2. ارجع خطوة للخلف (Step Back) إلى المفهوم أو الباب الإسلامي الأشمل.
+   أمثلة:
+   - بر الوالدين ← الأخلاق ← حقوق الوالدين
+   - الغضب ← الأخلاق ← كظم الغيظ
+   - الرزق ← التوكل، القناعة، البركة، الصدقة
+   - الصلاة في السفر ← أحكام السفر ← الرخص
+3. أضف المفاهيم الإسلامية المرتبطة التي قد ترد في الأحاديث.
+4. استخدم مصطلحات شرعية وألفاظاً حديثية ومرادفات معروفة.
+5. إذا كان السؤال يعتمد على قصة أو حكم أو فضيلة، فابحث أيضاً بالمفهوم العام
+   وليس بالألفاظ الحرفية.
+6. لا تغيّر نية المستخدم أو موضوع السؤال.
+7. لا تكرر الاستعلامات السابقة إذا كانت متشابهة.
+
+يمكنك الاستفادة من:
+- أسماء الأبواب الفقهية.
+- أبواب العقيدة.
+- أبواب الآداب والأخلاق.
+- أسماء العبادات.
+- ألفاظ الأحاديث المشهورة.
+- المصطلحات الشرعية المرتبطة.
+
+الاستعلامات التي جُرّبت سابقاً:
+{tried_queries}
+
+الأحاديث التي سبق استرجاعها:
+{retrieval_history}
+
+أخرج استعلاماً واحداً فقط يصلح للبحث، بدون أي شرح.
+""",
         ),
         (
             "human",
-            "السؤال الأصلي: {original_question}\n"
-            "الاستعلام الحالي: {current_query}",
+            """
+السؤال الأصلي:
+{original_question}
+
+الاستعلام الحالي:
+{current_query}
+""",
         ),
     ]
 )
@@ -124,6 +158,9 @@ def _parse_grade_response(response: str, num_docs: int) -> list[bool]:
 # ── Node & graph builder ───────────────────────────────────────────────────────
 
 def build_nodes(llm, vectorstore, bm25_index, all_chunks, parent_store, reranker,
+                qdrant_client=None, embedding_model_name: str = "",
+                category_collection_name: str = "hadith_categories",
+                category_top_k: int = 5,
                 k: int = 5, fetch_k: int = 25, system_role: str = ""):
     """
     Build and return the compiled LangGraph agent.
@@ -136,6 +173,10 @@ def build_nodes(llm, vectorstore, bm25_index, all_chunks, parent_store, reranker
     all_chunks   : List of all child Document chunks.
     parent_store : List of parent Document objects.
     reranker     : Cross-encoder reranker model.
+    qdrant_client: QdrantClient for category retrieval.
+    embedding_model_name : Model name for encoding category queries.
+    category_collection_name : Qdrant collection for categories.
+    category_top_k : Number of categories to match per query.
     k            : Number of final results to retrieve per loop.
     fetch_k      : Broad fetch count for dense + BM25 search.
     system_role  : System prompt for the final RAG generation chain.
@@ -152,16 +193,33 @@ def build_nodes(llm, vectorstore, bm25_index, all_chunks, parent_store, reranker
         loop = state["loop_count"]
         logger.info("[Agent] RETRIEVE — query=%r  loop=%d", query[:80], loop)
 
-        docs = retrieve(
-            query=query,
-            vectorstore=vectorstore,
-            bm25_index=bm25_index,
-            all_chunks=all_chunks,
-            parent_store=parent_store,
-            reranker=reranker,
-            k=k,
-            fetch_k=fetch_k,
-        )
+        # Use category-filtered retrieval if category index is available
+        if qdrant_client and embedding_model_name:
+            docs = retrieve_with_category_filter(
+                query=query,
+                vectorstore=vectorstore,
+                bm25_index=bm25_index,
+                all_chunks=all_chunks,
+                parent_store=parent_store,
+                reranker=reranker,
+                qdrant_client=qdrant_client,
+                embedding_model_name=embedding_model_name,
+                category_collection_name=category_collection_name,
+                category_top_k=category_top_k,
+                k=k,
+                fetch_k=fetch_k,
+            )
+        else:
+            docs = retrieve(
+                query=query,
+                vectorstore=vectorstore,
+                bm25_index=bm25_index,
+                all_chunks=all_chunks,
+                parent_store=parent_store,
+                reranker=reranker,
+                k=k,
+                fetch_k=fetch_k,
+            )
 
         # Append hadith texts to retrieval history
         new_history = list(state["retrieval_history"])

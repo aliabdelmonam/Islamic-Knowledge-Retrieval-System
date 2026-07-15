@@ -177,3 +177,144 @@ def retrieve(
 
     logger.info("Retrieved %d results for query: %r", len(results), query[:60])
     return results
+
+
+# ── Category-filtered retrieve ─────────────────────────────────────────────────
+
+def _dense_search_filtered(
+    vectorstore,
+    query: str,
+    k: int,
+    category_names: list[str],
+) -> list[tuple[Document, float]]:
+    """Dense search with Qdrant payload filter on high_level_categories."""
+    from qdrant_client.http.models import FieldCondition, Filter, MatchAny
+
+    qdrant_filter = Filter(
+        should=[
+            FieldCondition(
+                key="metadata.high_level_categories",
+                match=MatchAny(any=category_names),
+            )
+        ]
+    )
+
+    try:
+        return vectorstore.similarity_search_with_score(
+            query, k=k, filter=qdrant_filter,
+        )
+    except Exception as exc:
+        logger.warning("Filtered dense search failed: %s — falling back to unfiltered", exc)
+        return _dense_search(vectorstore, query, k)
+
+
+def _bm25_search_filtered(
+    bm25_index: BM25Okapi,
+    all_chunks: list[Document],
+    query: str,
+    k: int,
+    category_names: set[str],
+) -> list[tuple[Document, float]]:
+    """BM25 search, then filter results to only chunks matching categories."""
+    from app.services.bm25_index import bm25_search
+    hits = bm25_search(bm25_index, query, k * 3)  # fetch extra, then filter
+    results = []
+    for idx, score in hits:
+        if 0 <= idx < len(all_chunks):
+            chunk = all_chunks[idx]
+            chunk_cats = set(chunk.metadata.get("high_level_categories", []))
+            if chunk_cats & category_names:
+                results.append((chunk, score))
+                if len(results) >= k:
+                    break
+    return results
+
+
+def retrieve_with_category_filter(
+    query: str,
+    vectorstore,
+    bm25_index: BM25Okapi,
+    all_chunks: list[Document],
+    parent_store: list[Document],
+    reranker,
+    qdrant_client,
+    embedding_model_name: str,
+    category_collection_name: str = "hadith_categories",
+    category_top_k: int = 5,
+    k: int = 5,
+    fetch_k: int = 25,
+    reranker_batch_size: int = 128,
+) -> list[RetrievedResult]:
+    """
+    Multi-stage retrieval:
+    1. Retrieve top category_top_k categories via semantic search.
+    2. Filter dense and BM25 searches to matching categories.
+    3. Merge → parent expansion → rerank → return top-k.
+    """
+    from app.services.category_retriever import retrieve_categories
+
+    # Stage 1: category matching
+    matched = retrieve_categories(
+        query=query,
+        client=qdrant_client,
+        model_name=embedding_model_name,
+        collection_name=category_collection_name,
+        top_k=category_top_k,
+    )
+    category_names = [name for name, _score in matched]
+
+    if not category_names:
+        logger.warning("No categories matched — falling back to unfiltered retrieval")
+        return retrieve(
+            query, vectorstore, bm25_index, all_chunks, parent_store, reranker,
+            k=k, fetch_k=fetch_k, reranker_batch_size=reranker_batch_size,
+        )
+
+    logger.info("Stage 1 categories: %s", category_names)
+
+    # Stage 2: filtered hybrid search
+    dense_results = _dense_search_filtered(vectorstore, query, fetch_k, category_names)
+    bm25_results = _bm25_search_filtered(
+        bm25_index, all_chunks, query, fetch_k, set(category_names),
+    )
+
+    # Merge
+    seen_ids: set[int] = set()
+    merged: list[Document] = []
+
+    for doc, _score in dense_results:
+        idx = doc.metadata.get("idx", -1)
+        if idx not in seen_ids:
+            seen_ids.add(idx)
+            merged.append(doc)
+
+    for doc, _score in bm25_results:
+        idx = doc.metadata.get("idx", -1)
+        if idx not in seen_ids:
+            seen_ids.add(idx)
+            merged.append(doc)
+
+    if not merged:
+        logger.warning("No candidates after category filter — falling back to unfiltered")
+        return retrieve(
+            query, vectorstore, bm25_index, all_chunks, parent_store, reranker,
+            k=k, fetch_k=fetch_k, reranker_batch_size=reranker_batch_size,
+        )
+
+    # Parent expansion
+    expanded = _expand_to_parent(merged, parent_store)
+
+    # Rerank
+    reranked = _rerank(reranker, query, expanded, top_k=k, batch_size=reranker_batch_size)
+
+    # Build results
+    results: list[RetrievedResult] = []
+    for doc, score in reranked:
+        r = RetrievedResult.from_chunk(doc, rerank_score=score)
+        results.append(r)
+
+    logger.info(
+        "Retrieved %d results (category-filtered) for query: %r",
+        len(results), query[:60],
+    )
+    return results
