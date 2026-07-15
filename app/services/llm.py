@@ -77,8 +77,27 @@ class ChatSBG(BaseChatModel):
         if not text:
             logger.warning("SBG returned empty output_text. Full response: %s", data)
 
+        usage = data.get("usage", {})
+
+        message = AIMessage(
+            content=text,
+            response_metadata={
+                "model_name": self.model_id,
+                "stop_reason": usage.get("stop_reason"),
+                "budget_state": usage.get("budget_state"),
+                "fallback_used": usage.get("fallback_used"),
+            },
+            usage_metadata={
+                "input_tokens": usage.get("input_tokens", 0),
+                "output_tokens": usage.get("output_tokens", 0),
+                "total_tokens": usage.get("total_tokens", 0),
+        },
+        )
+
         return ChatResult(
-            generations=[ChatGeneration(message=AIMessage(content=text))]
+            generations=[
+                ChatGeneration(message=message)
+            ]
         )
 
 

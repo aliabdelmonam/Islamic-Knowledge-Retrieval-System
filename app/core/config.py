@@ -79,7 +79,7 @@ class Settings(BaseSettings):
     llm_max_tokens: int = 512
 
     # ── Fanar ──────────────────────────────────────────────────────────────────
-    fanar_model: str = "Fanar-C-2-27B"
+    fanar_model: str = "Fanar"
     fanar_api_key: str | None = None
     fanar_base_url: str = "https://api.fanar.qa/v1"
 
