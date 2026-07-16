@@ -30,26 +30,108 @@
 }
 
 /* light theme tokens overrides if checkbox turned off */
-body.light-theme {
-    --bg-main: #fcfbfa;
-    --bg-sidebar: #f5f2eb;
-    --bg-card: rgba(255, 253, 250, 0.85);
-    --border-color: rgba(140, 106, 63, 0.15);
-    --border-color-active: rgba(140, 106, 63, 0.4);
-    
-    --text-primary: #2d261e;
-    --text-secondary: #6e6250;
-    --text-muted: #9e917d;
-    
-    --gold-primary: #8c6a3f;
-    --gold-bright: #ad8a5b;
-    --gold-dark: #5e4424;
-    --gold-gradient: linear-gradient(135deg, #8c6a3f, #ad8a5b, #5e4424);
-    
-    --success: #2b5c3b;
-    --shadow: 0 8px 24px rgba(140, 106, 63, 0.08);
-    --glow: 0 0 10px rgba(140, 106, 63, 0.1);
+body.light-theme{
+    --bg-main:#faf8f5;
+    --bg-sidebar:#ffffff;
+
+    --bg-card:rgba(255,255,255,.95);
+
+    --border-color:rgba(183,140,68,.12);
+    --border-color-active:rgba(183,140,68,.28);
+
+    --text-primary:#2F2418;
+    --text-secondary:#5F5141;
+    --text-muted:#9A8D7A;
+
+    --gold-primary:#B6843E;
+    --gold-bright:#D6A552;
+    --gold-dark:#8C632A;
+
+    --gold-gradient:linear-gradient(
+        135deg,
+        #E6C27A,
+        #C89644,
+        #A06C25
+    );
+
+    --shadow:
+    0 8px 25px rgba(180,140,90,.08),
+    0 1px 2px rgba(0,0,0,.03);
+
+    --glow:0 0 20px rgba(198,148,63,.12);
 }
+
+body.light-theme .slider{
+    background: #f0f0f0;
+}
+
+
+body.light-theme .quran-quote-block{
+    background:
+    linear-gradient(
+    180deg,
+    #fffdfa,
+    #fbf5eb);
+    border:1px solid rgba(210,170,90,.22);
+}
+
+body.light-theme .card{
+    background:rgba(255,255,255,.92);
+    border:1px solid rgba(190,150,90,.15);
+    box-shadow:
+        0 18px 35px rgba(180,140,90,.08),
+        0 2px 8px rgba(255,255,255,.8) inset;
+}
+
+body.light-theme .chat-input-container{
+    background:#ffffff;
+    border:1px solid rgba(190,150,90,.16);
+    box-shadow:
+        0 12px 30px rgba(180,140,90,.08);
+}
+
+
+body.light-theme .nav-item.active{
+
+background:
+
+linear-gradient(
+90deg,
+rgba(198,148,63,.16),
+rgba(198,148,63,.04)
+);
+
+border:1px solid rgba(198,148,63,.18);
+}
+
+
+body.light-theme .prayer-time-item.active{
+
+background:#FFF3DD;
+
+border:1px solid rgba(198,148,63,.22);
+
+color:#A06C25;
+}
+
+body.light-theme .center-column::before{
+content:"";
+position:absolute;
+inset:0;
+background:
+radial-gradient(circle at top,
+rgba(212,174,107,.18),
+transparent 55%);
+pointer-events:none;
+}
+
+body.light-theme .chip-btn{
+
+    background:#ffffff;
+
+    border:1px solid rgba(190,150,90,.15);
+}
+
 
 * {
     box-sizing: border-box;
@@ -57,17 +139,47 @@ body.light-theme {
     padding: 0;
 }
 
+
 body {
     background-color: var(--bg-main);
+
     color: var(--text-primary);
     font-family: var(--font-body);
     height: 100vh;
     overflow: hidden;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    transition: background .3s ease, color .3s ease;
+}
+
+
+body.light-theme .response-content{
+    background:#ffffff;
+    border:1px solid rgba(190,150,90,.15);
+}
+
+body.light-theme .sample-search-query{
+    background:#ffffff;
+}
+
+
+body.light-theme .compass-ring{
+    background:#fffdf9;
+}
+
+body.light-theme .nav-item:hover{
+    background:#F8F3EA;
+}
+
+body.light-theme .chip-btn:hover{
+    background:#FFF5E8;
+}
+
+body.light-theme .input-action-btn:hover{
+    background:#F5EFE5;
 }
 
 /* --- Container App --- */
 .app-container {
+    background: transparent;
     display: flex;
     flex-direction: row;
     width: 100vw;
@@ -311,7 +423,7 @@ body {
 
 /* Quote slider */
 .quote-slider-widget {
-    margin-top: auto;
+    /* margin-top: auto; */
     text-align: center;
     padding: 20px 14px;
     background: linear-gradient(180deg, var(--bg-card) 0%, rgba(204, 164, 108, 0.03) 100%);
@@ -364,6 +476,14 @@ body {
     display: flex;
     flex-direction: column;
     background-color: var(--bg-main);
+    background-image: linear-gradient(rgba(6, 5, 3, 0.50), rgba(6, 5, 3, 0.75)), url("images/dark.png");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+body.light-theme .center-column {
+    background-image: linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)), url("images/light1.png");
 }
 
 /* Arched Mosque Window Background overlay */
@@ -451,7 +571,7 @@ body {
 }
 
 .sample-search-query {
-    align-self: flex-end;
+    align-self: flex-start;
     background: rgba(25, 20, 15, 0.4);
     border: 1px solid var(--border-color);
     border-radius: 16px 16px 2px 16px;
@@ -575,7 +695,7 @@ body {
 }
 
 .chat-bubble.user {
-    align-self: flex-end;
+    align-self: flex-start;
     flex-direction: row-reverse;
 }
 
@@ -596,7 +716,7 @@ body {
     background: rgba(204, 164, 108, 0.08);
     border: 1px solid var(--border-color-active);
     color: var(--text-primary);
-    border-top-left-radius: 2px;
+    border-top-right-radius: 2px;
 }
 
 .chat-bubble.assistant .text-wrapper {
@@ -715,6 +835,12 @@ body {
     stroke: var(--gold-primary);
 }
 
+
+body.light-theme .chat-bubble.assistant .text-wrapper{
+
+    background:#ffffff;
+    border:1px solid rgba(190,150,90,.15);
+}
 /* Input Form */
 .chat-input-container {
     background: rgba(25, 20, 15, 0.65);
@@ -801,6 +927,10 @@ body {
     height: 16px;
     stroke: #25160b;
     margin-right: 2px;
+}
+
+body.light-theme .send-icon{
+    stroke: #ffffff;
 }
 
 .assistant-disclaimer {

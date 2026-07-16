@@ -16,7 +16,228 @@
 <body>
     <div class="app-container">
         
-        <!-- ==================== COLUMN 1: WIDGETS & SIDE INFO ==================== -->
+        <!-- ==================== COLUMN 1: RIGHT PANEL (SIDEBAR NAV) ==================== -->
+        <aside class="right-column">
+            <!-- App Brand / Title -->
+            <div class="app-brand">
+                <div class="logo-wrapper">
+                    <!-- Beautiful Golden Arched Mosque Dome Icon -->
+                    <svg class="app-logo" viewBox="0 0 100 100" fill="none">
+                        <path d="M50,15 C68,40 80,48 80,68 C80,82 68,85 50,85 C32,85 20,82 20,68 C20,48 32,40 50,15 Z" stroke="url(#goldGradient)" stroke-width="3" fill="rgba(202, 164, 108, 0.05)"/>
+                        <path d="M50,30 C60,48 70,55 70,68 C70,78 61,80 50,80 C39,80 30,78 30,68 C30,55 40,48 50,30 Z" fill="url(#goldGradient)"/>
+                        <defs>
+                            <linearGradient id="goldGradient" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stop-color="#cca46c"/>
+                                <stop offset="50%" stop-color="#e5c18b"/>
+                                <stop offset="100%" stop-color="#ab824b"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <h1 class="brand-title">نور الهداية</h1>
+                <p class="brand-slogan">رفيقك في المعرفة الإسلامية</p>
+            </div>
+            
+            <!-- Navigation Menu -->
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    <span>المحادثة</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                    </svg>
+                    <span>القرآن الكريم</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    </svg>
+                    <span>الأحاديث</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                        <line x1="12" y1="19" x2="12" y2="22"></line>
+                    </svg>
+                    <span>الأدعية</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                    <span>المعرفة الإسلامية</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <span>مواقيت الصلاة</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+                    </svg>
+                    <span>اتجاه القبلة</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    <span>المفضلة</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    <span>المجلة</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                    <span>الإعدادات</span>
+                </a>
+            </nav>
+            
+            <!-- Silhouette & Dark Mode Switch at the Bottom -->
+            <div class="sidebar-footer">
+                <div class="mosque-silhouette"></div>
+                <div class="theme-switch-container">
+                    <!-- <svg class="footer-icon sun-moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg> -->
+                    <span class="switch-label">الوضع الليلي</span>
+                    <label class="switch">
+                        <input type="checkbox" id="themeSwitch">
+                        <span class="slider round"></span>
+                    </label>
+                    
+                </div>
+            </div>
+        </aside>
+        
+        <!-- ==================== COLUMN 2: CHAT & DYNAMIC PANEL ==================== -->
+        <main class="center-column">
+            <!-- Arched Window Frame Overlay & Backlighting -->
+            <!-- <div class="mosque-arch-background"></div> -->
+            
+            <div class="chat-viewport">
+                <!-- Welcome State -->
+                <div class="chat-welcome-state" id="welcomeState">
+                    <div class="welcome-heading">
+                        <h2 class="welcome-title">
+                            السلام عليكم
+                            <svg class="welcome-leaf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.18.03.35-.08.38-.26l.83-4.52a23.9 23.9 0 0 1 3.95-.33c1.38 0 2.72.06 4 .19l.83 4.54c.03.18.2.3.38.27A10 10 0 0 0 12 2z"/>
+                                <path d="M12 22V12"/>
+                            </svg>
+                        </h2>
+                        <p class="welcome-subtitle">كيف يمكنني مساعدتك اليوم؟</p>
+                    </div>
+                    
+                    <!-- Hardcoded Example Card matching picture exactly -->
+                    <div class="sample-search-card" id="mockupCard">
+                        <div class="sample-search-query">
+                            <span>ما هو قول الله عن الرحمة في القرآن الكريم؟</span>
+                            <span class="timestamp">10:30 ص ✓</span>
+                        </div>
+                        
+                        <div class="sample-result-response">
+                            <div class="bot-avatar-badge">
+                                <svg viewBox="0 0 24 24" class="avatar-svg" fill="currentColor">
+                                    <path d="M12 3L2 12h3v8h14v-8h3z"/>
+                                    <path d="M12 5l-7 7h3v6h8v-6h3z" fill="#cca46c"/>
+                                </svg>
+                            </div>
+                            <div class="response-content">
+                                <p class="response-lead">يذكر الله رحمته في القرآن الكريم مرات عديدة، ومن أجمل الآيات قوله:</p>
+                                
+                                <div class="quran-quote-block">
+                                    <p class="ayah-arabic">۞ وَرَحْمَتِي وَسِعَتْ كُلَّ شَيْءٍ ۞</p>
+                                    <p class="ayah-translation">"ورَحْمَتي وسِعَتْ كُلَّ شَيءٍ"</p>
+                                    <span class="ayah-citation">سورة الأعراف - 156</span>
+                                </div>
+                                
+                                <p class="response-follow">هذه الآية تبين أن رحمة الله واسعة تشمل كل خلقه، وهي من أعظم صفات الله سبحانه وتعالى.</p>
+                                <span class="timestamp">10:30 ص</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dynamic Chat Message Stream -->
+                <div class="chat-message-stream" id="messageStream" style="display: none;">
+                    <!-- Dynamically appended messages will appear here -->
+                </div>
+            </div>
+
+            <!-- Footer Area: Suggestions and Input -->
+            <div class="chat-footer">
+                <div class="suggestion-chips">
+                    <span class="chip-label">قد ترغب في:</span>
+                    <button class="chip-btn" data-query="أخبرني بحديث عن الرحمة">
+                        <svg viewBox="0 0 24 24" class="chip-icon" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                        <span>أخبرني بحديث عن الرحمة</span>
+                    </button>
+                    <button class="chip-btn" data-query="كيف تزيد من رحمة الله؟">
+                        <svg viewBox="0 0 24 24" class="chip-icon" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 20h9"></path>
+                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                        </svg>
+                        <span>كيف تزيد من رحمة الله؟</span>
+                    </button>
+                    <button class="chip-btn" data-query="دعاء لرحمة الله">
+                        <svg viewBox="0 0 24 24" class="chip-icon" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                        </svg>
+                        <span>دعاء لرحمة الله</span>
+                    </button>
+                </div>
+
+                <!-- Input form -->
+                <form class="chat-input-container" id="chatForm">
+                    <button type="submit" class="send-btn" id="sendBtn" aria-label="ارسال">
+                        <svg viewBox="0 0 24 24" class="send-icon" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                    <input type="text" class="chat-input" id="chatInput" placeholder="اسألني عن الإسلام..." autocomplete="off">
+                    <button type="button" class="input-action-btn" id="retrieveModeBtn" title="تبديل إلى نمط الاسترجاع فقط">
+                        <svg viewBox="0 0 24 24" class="action-icon" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                        </svg>
+                    </button>
+                </form>
+                
+                <span class="assistant-disclaimer">
+                    <svg viewBox="0 0 24 24" class="shield-check" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        <path d="m9 11 2 2 4-4"></path>
+                    </svg>
+                    إجابات الذكاء الاصطناعي تعتمد على المصادر الإسلامية الموثوقة. يرجى التحقق من المعلومات المهمة مع أهل العلم.
+                </span>
+            </div>
+        </main>
+        
+        <!-- ==================== COLUMN 3: WIDGETS & SIDE INFO ==================== -->
         <aside class="left-column">
             <!-- Prayer Times Widget -->
             <div class="card prayer-widget">
@@ -129,226 +350,6 @@
                     <span class="circle-dot"></span>
                     <span class="circle-dot"></span>
                     <span class="circle-dot"></span>
-                </div>
-            </div>
-        </aside>
-        
-        <!-- ==================== COLUMN 2: CHAT & DYNAMIC PANEL ==================== -->
-        <main class="center-column">
-            <!-- Arched Window Frame Overlay & Backlighting -->
-            <div class="mosque-arch-background"></div>
-            
-            <div class="chat-viewport">
-                <!-- Welcome State -->
-                <div class="chat-welcome-state" id="welcomeState">
-                    <div class="welcome-heading">
-                        <h2 class="welcome-title">
-                            السلام عليكم
-                            <svg class="welcome-leaf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.18.03.35-.08.38-.26l.83-4.52a23.9 23.9 0 0 1 3.95-.33c1.38 0 2.72.06 4 .19l.83 4.54c.03.18.2.3.38.27A10 10 0 0 0 12 2z"/>
-                                <path d="M12 22V12"/>
-                            </svg>
-                        </h2>
-                        <p class="welcome-subtitle">كيف يمكنني مساعدتك اليوم؟</p>
-                    </div>
-                    
-                    <!-- Hardcoded Example Card matching picture exactly -->
-                    <div class="sample-search-card" id="mockupCard">
-                        <div class="sample-search-query">
-                            <span>ما هو قول الله عن الرحمة في القرآن الكريم؟</span>
-                            <span class="timestamp">10:30 ص ✓</span>
-                        </div>
-                        
-                        <div class="sample-result-response">
-                            <div class="bot-avatar-badge">
-                                <svg viewBox="0 0 24 24" class="avatar-svg" fill="currentColor">
-                                    <path d="M12 3L2 12h3v8h14v-8h3z"/>
-                                    <path d="M12 5l-7 7h3v6h8v-6h3z" fill="#cca46c"/>
-                                </svg>
-                            </div>
-                            <div class="response-content">
-                                <p class="response-lead">يذكر الله رحمته في القرآن الكريم مرات عديدة، ومن أجمل الآيات قوله:</p>
-                                
-                                <div class="quran-quote-block">
-                                    <p class="ayah-arabic">۞ وَرَحْمَتِي وَسِعَتْ كُلَّ شَيْءٍ ۞</p>
-                                    <p class="ayah-translation">"ورَحْمَتي وسِعَتْ كُلَّ شَيءٍ"</p>
-                                    <span class="ayah-citation">سورة الأعراف - 156</span>
-                                </div>
-                                
-                                <p class="response-follow">هذه الآية تبين أن رحمة الله واسعة تشمل كل خلقه، وهي من أعظم صفات الله سبحانه وتعالى.</p>
-                                <span class="timestamp">10:30 ص</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Dynamic Chat Message Stream -->
-                <div class="chat-message-stream" id="messageStream" style="display: none;">
-                    <!-- Dynamically appended messages will appear here -->
-                </div>
-            </div>
-
-            <!-- Footer Area: Suggestions and Input -->
-            <div class="chat-footer">
-                <div class="suggestion-chips">
-                    <span class="chip-label">قد ترغب في:</span>
-                    <button class="chip-btn" data-query="أخبرني بحديث عن الرحمة">
-                        <svg viewBox="0 0 24 24" class="chip-icon" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                        </svg>
-                        <span>أخبرني بحديث عن الرحمة</span>
-                    </button>
-                    <button class="chip-btn" data-query="كيف تزيد من رحمة الله؟">
-                        <svg viewBox="0 0 24 24" class="chip-icon" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 20h9"></path>
-                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-                        </svg>
-                        <span>كيف تزيد من رحمة الله؟</span>
-                    </button>
-                    <button class="chip-btn" data-query="دعاء لرحمة الله">
-                        <svg viewBox="0 0 24 24" class="chip-icon" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                        </svg>
-                        <span>دعاء لرحمة الله</span>
-                    </button>
-                </div>
-
-                <!-- Input form -->
-                <form class="chat-input-container" id="chatForm">
-                    <button type="submit" class="send-btn" id="sendBtn" aria-label="ارسال">
-                        <svg viewBox="0 0 24 24" class="send-icon" fill="none" stroke="currentColor" stroke-width="2.5">
-                            <line x1="22" y1="2" x2="11" y2="13"></line>
-                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                        </svg>
-                    </button>
-                    <input type="text" class="chat-input" id="chatInput" placeholder="اسألني عن الإسلام..." autocomplete="off">
-                    <button type="button" class="input-action-btn" id="retrieveModeBtn" title="تبديل إلى نمط الاسترجاع فقط">
-                        <svg viewBox="0 0 24 24" class="action-icon" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-                        </svg>
-                    </button>
-                </form>
-                
-                <span class="assistant-disclaimer">
-                    <svg viewBox="0 0 24 24" class="shield-check" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                        <path d="m9 11 2 2 4-4"></path>
-                    </svg>
-                    إجابات الذكاء الاصطناعي تعتمد على المصادر الإسلامية الموثوقة. يرجى التحقق من المعلومات المهمة مع أهل العلم.
-                </span>
-            </div>
-        </main>
-        
-        <!-- ==================== COLUMN 3: RIGHT PANEL (SIDEBAR NAV) ==================== -->
-        <aside class="right-column">
-            <!-- App Brand / Title -->
-            <div class="app-brand">
-                <div class="logo-wrapper">
-                    <!-- Beautiful Golden Arched Mosque Dome Icon -->
-                    <svg class="app-logo" viewBox="0 0 100 100" fill="none">
-                        <path d="M50,15 C68,40 80,48 80,68 C80,82 68,85 50,85 C32,85 20,82 20,68 C20,48 32,40 50,15 Z" stroke="url(#goldGradient)" stroke-width="3" fill="rgba(202, 164, 108, 0.05)"/>
-                        <path d="M50,30 C60,48 70,55 70,68 C70,78 61,80 50,80 C39,80 30,78 30,68 C30,55 40,48 50,30 Z" fill="url(#goldGradient)"/>
-                        <defs>
-                            <linearGradient id="goldGradient" x1="0" y1="0" x2="1" y2="1">
-                                <stop offset="0%" stop-color="#cca46c"/>
-                                <stop offset="50%" stop-color="#e5c18b"/>
-                                <stop offset="100%" stop-color="#ab824b"/>
-                            </linearGradient>
-                        </defs>
-                    </svg>
-                </div>
-                <h1 class="brand-title">نور الهداية</h1>
-                <p class="brand-slogan">رفيقك في المعرفة الإسلامية</p>
-            </div>
-            
-            <!-- Navigation Menu -->
-            <nav class="sidebar-nav">
-                <a href="#" class="nav-item active">
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                    </svg>
-                    <span>المحادثة</span>
-                </a>
-                <a href="#" class="nav-item">
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-                    </svg>
-                    <span>القرآن الكريم</span>
-                </a>
-                <a href="#" class="nav-item">
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-                    </svg>
-                    <span>الأحاديث</span>
-                </a>
-                <a href="#" class="nav-item">
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
-                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                        <line x1="12" y1="19" x2="12" y2="22"></line>
-                    </svg>
-                    <span>الأدعية</span>
-                </a>
-                <a href="#" class="nav-item">
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="12" y1="16" x2="12" y2="12"></line>
-                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                    </svg>
-                    <span>المعرفة الإسلامية</span>
-                </a>
-                <a href="#" class="nav-item">
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <polyline points="12 6 12 12 16 14"></polyline>
-                    </svg>
-                    <span>مواقيت الصلاة</span>
-                </a>
-                <a href="#" class="nav-item">
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
-                    </svg>
-                    <span>اتجاه القبلة</span>
-                </a>
-                <a href="#" class="nav-item">
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
-                    </svg>
-                    <span>المفضلة</span>
-                </a>
-                <a href="#" class="nav-item">
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14 2 14 8 20 8"></polyline>
-                        <line x1="16" y1="13" x2="8" y2="13"></line>
-                        <line x1="16" y1="17" x2="8" y2="17"></line>
-                        <polyline points="10 9 9 9 8 9"></polyline>
-                    </svg>
-                    <span>المجلة</span>
-                </a>
-                <a href="#" class="nav-item">
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="3"></circle>
-                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                    </svg>
-                    <span>الإعدادات</span>
-                </a>
-            </nav>
-            
-            <!-- Silhouette & Dark Mode Switch at the Bottom -->
-            <div class="sidebar-footer">
-                <div class="mosque-silhouette"></div>
-                <div class="theme-switch-container">
-                    <span class="switch-label">الوضع الليلي</span>
-                    <label class="switch">
-                        <input type="checkbox" id="themeSwitch" checked>
-                        <span class="slider round"></span>
-                    </label>
-                    <svg class="footer-icon sun-moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                    </svg>
                 </div>
             </div>
         </aside>

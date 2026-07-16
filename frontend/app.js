@@ -12,6 +12,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const welcomeState = document.getElementById("welcomeState");
     const mockupCard = document.getElementById("mockupCard");
     const themeSwitch = document.getElementById("themeSwitch");
+    document.body.classList.add("light-theme");
+    themeSwitch.checked = false;
     const retrieveModeBtn = document.getElementById("retrieveModeBtn");
     const suggestionChips = document.querySelectorAll(".suggestion-chips .chip-btn");
 
