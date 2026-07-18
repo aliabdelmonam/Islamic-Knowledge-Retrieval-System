@@ -16,6 +16,27 @@ document.addEventListener("DOMContentLoaded", () => {
     themeSwitch.checked = false;
     const retrieveModeBtn = document.getElementById("retrieveModeBtn");
     const suggestionChips = document.querySelectorAll(".suggestion-chips .chip-btn");
+    const leftColumn = document.querySelector(".left-column");
+    const leftSidebarToggle = document.getElementById("leftSidebarToggle");
+    const leftSidebarOverlay = document.getElementById("leftSidebarOverlay");
+
+    // 0. Mobile left-sidebar toggle
+    function openLeftSidebar() {
+        leftColumn.classList.add("open");
+        leftSidebarOverlay.classList.add("open");
+    }
+    function closeLeftSidebar() {
+        leftColumn.classList.remove("open");
+        leftSidebarOverlay.classList.remove("open");
+    }
+    leftSidebarToggle.addEventListener("click", () => {
+        if (leftColumn.classList.contains("open")) {
+            closeLeftSidebar();
+        } else {
+            openLeftSidebar();
+        }
+    });
+    leftSidebarOverlay.addEventListener("click", closeLeftSidebar);
 
     let retrieveOnlySession = false; // true = call /retrieve instead of /ask
 
@@ -57,16 +78,48 @@ document.addEventListener("DOMContentLoaded", () => {
         submitMessage();
     });
 
-    // Helper: format dates to regional Arabic timestamp
-    function getArabicTime() {
-        const d = new Date();
-        let hours = d.getHours();
-        const minutes = String(d.getMinutes()).padStart(2, '0');
-        const ampm = hours >= 12 ? 'م' : 'ص';
-        hours = hours % 12;
-        hours = hours ? hours : 12; // 0 should be 12
-        return `${hours}:${minutes} ${ampm}`;
-    }
+    // 5. Message action buttons (like / dislike / regenerate / copy) via event delegation
+    messageStream.addEventListener("click", async (e) => {
+        const btn = e.target.closest(".msg-action-btn");
+        if (!btn) return;
+
+        const action = btn.dataset.action;
+        const bubble = btn.closest(".chat-bubble");
+
+        if (action === "like") {
+            const wasActive = btn.classList.contains("active");
+            const dislikeBtn = bubble.querySelector('.msg-action-btn[data-action="dislike"]');
+            if (dislikeBtn) dislikeBtn.classList.remove("active");
+            btn.classList.toggle("active", !wasActive);
+        }
+
+        if (action === "dislike") {
+            const wasActive = btn.classList.contains("active");
+            const likeBtn = bubble.querySelector('.msg-action-btn[data-action="like"]');
+            if (likeBtn) likeBtn.classList.remove("active");
+            btn.classList.toggle("active", !wasActive);
+        }
+
+        if (action === "copy") {
+            const contentEl = bubble.querySelector(".markdown-content") || bubble.querySelector(".source-document-details");
+            const textToCopy = contentEl ? contentEl.innerText.trim() : "";
+            try {
+                await navigator.clipboard.writeText(textToCopy);
+                btn.classList.add("copied");
+                setTimeout(() => btn.classList.remove("copied"), 1500);
+            } catch (err) {
+                console.error("Copy failed:", err);
+            }
+        }
+
+        if (action === "regenerate") {
+            const question = bubble.dataset.question;
+            const mode = bubble.dataset.mode === "retrieve";
+            if (!question) return;
+            bubble.remove();
+            await fetchAndRespond(question, mode);
+        }
+    });
 
     // Main send message orchestration
     async function submitMessage() {
@@ -83,12 +136,18 @@ document.addEventListener("DOMContentLoaded", () => {
         appendBubble("user", text);
         chatInput.value = "";
 
-        // 2. Append loading indicator bubble
+        // 2. Fetch + render assistant response
+        await fetchAndRespond(text, retrieveOnlySession);
+    }
+
+    // Fetches from the RAG backend and renders the assistant response.
+    // Reused by both the initial send and the "regenerate" action.
+    async function fetchAndRespond(text, useRetrieveMode) {
         const loaderId = appendLoadingBubble();
         messageStream.scrollIntoView({ behavior: "smooth", block: "end" });
 
         try {
-            if (retrieveOnlySession) {
+            if (useRetrieveMode) {
                 // Call /retrieve endpoint
                 const res = await fetch(`${API_BASE_URL}/retrieve`, {
                     method: "POST",
@@ -100,7 +159,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const data = await res.json();
 
                 removeLoadingBubble(loaderId);
-                renderRetrieveResponse(data);
+                renderRetrieveResponse(data, text, useRetrieveMode);
             } else {
                 // Call /ask endpoint
                 const res = await fetch(`${API_BASE_URL}/ask`, {
@@ -113,12 +172,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 const data = await res.json();
 
                 removeLoadingBubble(loaderId);
-                renderAskResponse(data);
+                renderAskResponse(data, text, useRetrieveMode);
             }
         } catch (err) {
             console.error(err);
             removeLoadingBubble(loaderId);
-            appendBubble("assistant", "نعتذر، حدث خطأ أثناء الاتصال بالخادم. الرجاء التأكد من تشغيل خادم RAG وإعادة المحاولة.");
+            appendBubble("assistant", "نعتذر، حدث خطأ أثناء الاتصال بالخادم. الرجاء التأكد من تشغيل خادم RAG وإعادة المحاولة.", text, useRetrieveMode);
         }
 
         // Scroll viewport to bottom
@@ -127,32 +186,69 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Generic Bubble renderer
-    function appendBubble(sender, text) {
+    function appendBubble(sender, text, sourceQuestion, sourceMode) {
         const bubble = document.createElement("div");
         bubble.className = `chat-bubble ${sender}`;
 
-        let avatarHTML = "";
         if (sender === "assistant") {
-            avatarHTML = `
+            bubble.dataset.question = sourceQuestion || "";
+            bubble.dataset.mode = sourceMode ? "retrieve" : "ask";
+            bubble.innerHTML = `
                 <div class="bot-avatar-badge">
                     <svg viewBox="0 0 24 24" class="avatar-svg" fill="currentColor">
                         <path d="M12 3L2 12h3v8h14v-8h3z"/>
                         <path d="M12 5l-7 7h3v6h8v-6h3z" fill="#cca46c"/>
                     </svg>
                 </div>
+                <div class="text-wrapper">
+                    <div class="markdown-content">${renderMarkdown(text)}</div>
+                    ${actionBarHTML()}
+                </div>
+            `;
+        } else {
+            bubble.innerHTML = `
+                <div class="text-wrapper">
+                    <p>${escapeHTML(text)}</p>
+                </div>
             `;
         }
 
-        bubble.innerHTML = `
-            ${avatarHTML}
-            <div class="text-wrapper">
-                <p>${escapeHTML(text)}</p>
-                <span class="timestamp">${getArabicTime()}</span>
-            </div>
-        `;
-
         messageStream.appendChild(bubble);
         return bubble;
+    }
+
+    // Markup for the response action bar (like / dislike / regenerate / copy)
+    function actionBarHTML() {
+        return `
+            <div class="message-actions">
+                <button type="button" class="msg-action-btn" data-action="like" title="إعجاب" aria-label="إعجاب">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M7 10v12"/>
+                        <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z"/>
+                    </svg>
+                </button>
+                <button type="button" class="msg-action-btn" data-action="dislike" title="عدم إعجاب" aria-label="عدم إعجاب">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 14V2"/>
+                        <path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22h0a3.13 3.13 0 0 1-3-3.88Z"/>
+                    </svg>
+                </button>
+                <button type="button" class="msg-action-btn" data-action="regenerate" title="إعادة المحاولة" aria-label="إعادة المحاولة">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                        <path d="M21 3v5h-5"/>
+                        <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+                        <path d="M8 16H3v5"/>
+                    </svg>
+                </button>
+                <button type="button" class="msg-action-btn" data-action="copy" title="نسخ" aria-label="نسخ">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+                        <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+                    </svg>
+                </button>
+            </div>
+        `;
     }
 
     // Loading indicator renderer
@@ -187,9 +283,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Renders the structured RAG output details
-    function renderAskResponse(data) {
+    function renderAskResponse(data, sourceQuestion, sourceMode) {
         const bubble = document.createElement("div");
         bubble.className = "chat-bubble assistant";
+        bubble.dataset.question = sourceQuestion || "";
+        bubble.dataset.mode = sourceMode ? "retrieve" : "ask";
 
         let sourcesHTML = "";
         if (data.sources && data.sources.length > 0) {
@@ -222,18 +320,20 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>
             <div class="text-wrapper" style="width: 100%;">
                 ${queryRewrittenHTML}
-                <p style="white-space: pre-wrap;">${escapeHTML(data.answer)}</p>
+                <div class="markdown-content">${renderMarkdown(data.answer)}</div>
                 ${sourcesHTML}
-                <span class="timestamp">${getArabicTime()}</span>
+                ${actionBarHTML()}
             </div>
         `;
         messageStream.appendChild(bubble);
     }
 
     // Renders the retrieve-only output cards
-    function renderRetrieveResponse(data) {
+    function renderRetrieveResponse(data, sourceQuestion, sourceMode) {
         const bubble = document.createElement("div");
         bubble.className = "chat-bubble assistant";
+        bubble.dataset.question = sourceQuestion || "";
+        bubble.dataset.mode = sourceMode ? "retrieve" : "ask";
 
         let resultsHTML = "";
         if (data.results && data.results.length > 0) {
@@ -264,7 +364,7 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>
             <div class="text-wrapper" style="width: 100%;">
                 ${resultsHTML}
-                <span class="timestamp">${getArabicTime()}</span>
+                ${actionBarHTML()}
             </div>
         `;
         messageStream.appendChild(bubble);
@@ -279,5 +379,17 @@ document.addEventListener("DOMContentLoaded", () => {
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
+    }
+
+    // Renders assistant text as sanitized markdown (ChatGPT-style, no bubble box)
+    function renderMarkdown(str) {
+        if (!str) return "";
+        try {
+            const rawHTML = marked.parse(str, { breaks: true, gfm: true });
+            return DOMPurify.sanitize(rawHTML);
+        } catch (err) {
+            console.error("Markdown render error:", err);
+            return `<p>${escapeHTML(str)}</p>`;
+        }
     }
 });
