@@ -14,10 +14,28 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <script>
+        (function () {
+            try {
+                if (localStorage.getItem("noor-theme") !== "dark") {
+                    document.body.classList.add("light-theme");
+                }
+            } catch (e) {
+                document.body.classList.add("light-theme");
+            }
+        })();
+    </script>
     <div class="app-container">
         
         <!-- ==================== COLUMN 1: RIGHT PANEL (SIDEBAR NAV) ==================== -->
         <aside class="right-column">
+            <!-- Master sidebar toggle: hides the widgets column, collapses this nav to icons -->
+            <button type="button" class="sidebar-master-toggle" id="sidebarMasterToggle" title="طي/فتح الشريط الجانبي" aria-label="طي أو فتح الشريط الجانبي">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="15" y1="3" x2="15" y2="21"></line>
+                </svg>
+            </button>
             <!-- App Brand / Title -->
             <div class="app-brand">
                 <div class="logo-wrapper">
@@ -52,7 +70,7 @@
                     </svg>
                     <span>القرآن الكريم</span>
                 </a>
-                <a href="#" class="nav-item">
+                <a href="ahadith.html" class="nav-item">
                     <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
                         <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
@@ -75,7 +93,7 @@
                     </svg>
                     <span>المعرفة الإسلامية</span>
                 </a>
-                <a href="#" class="nav-item">
+                <a href="mawaqit.html" class="nav-item">
                     <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"></circle>
                         <polyline points="12 6 12 12 16 14"></polyline>
@@ -88,7 +106,7 @@
                     </svg>
                     <span>اتجاه القبلة</span>
                 </a>
-                <a href="#" class="nav-item">
+                <a href="favorites.html" class="nav-item">
                     <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
                     </svg>
@@ -255,7 +273,7 @@
                             <line x1="8" y1="2" x2="8" y2="6"></line>
                             <line x1="3" y1="10" x2="21" y2="10"></line>
                         </svg>
-                        24 ذو القعدة 1445 هـ
+                        <span class="hijri-date-text">24 ذو القعدة 1445 هـ</span>
                     </span>
                 </div>
                 

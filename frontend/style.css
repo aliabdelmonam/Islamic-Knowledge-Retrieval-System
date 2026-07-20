@@ -1862,3 +1862,553 @@ body.light-theme .category-chip.active {
         grid-template-columns: 1fr;
     }
 }
+
+/* ==========================================================================
+   Hadiths Page (الأحاديث) — extends the Duas card system
+   ========================================================================== */
+
+.hadith-grid {
+    max-width: 1100px;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+}
+
+.hadith-card .hadith-text {
+    font-size: 15px;
+    line-height: 2.1;
+}
+
+.hadith-explanation {
+    font-size: 12.5px;
+    line-height: 1.9;
+    color: var(--text-secondary);
+    background: rgba(204, 164, 108, 0.06);
+    border-right: 2px solid var(--gold-primary);
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin: 0;
+}
+
+.hadith-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 14px;
+    font-size: 11px;
+    color: var(--text-muted);
+    border-top: 1px solid var(--border-color);
+    padding-top: 10px;
+}
+
+.hadith-meta-item strong {
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.hadith-grade {
+    padding: 2px 10px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.hadith-grade.grade-sahih {
+    color: #3f9d5c;
+    background: rgba(63, 157, 92, 0.1);
+}
+
+.hadith-grade.grade-hasan {
+    color: var(--gold-bright);
+    background: rgba(204, 164, 108, 0.12);
+}
+
+.hadith-grade.grade-daeef {
+    color: #c9564f;
+    background: rgba(201, 86, 79, 0.1);
+}
+
+.hadith-grade strong {
+    color: inherit;
+}
+
+@media (max-width: 768px) {
+    .hadith-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ==========================================================================
+   Prayer Times Page (مواقيت الصلاة)
+   ========================================================================== */
+
+.location-picker {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 14px;
+    max-width: 780px;
+    width: 100%;
+    margin: 0 auto 18px auto;
+    padding: 18px;
+}
+
+.location-picker-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+    min-width: 160px;
+}
+
+.location-picker-field label {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.location-select {
+    padding: 10px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 13px;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+}
+
+.location-select:focus {
+    border-color: var(--border-color-active);
+}
+
+.location-update-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: var(--gold-gradient);
+    border: none;
+    border-radius: 10px;
+    color: #25160b;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s ease, filter 0.2s ease;
+    white-space: nowrap;
+}
+
+body.light-theme .location-update-btn {
+    color: #ffffff;
+}
+
+.location-update-btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.08);
+}
+
+.location-update-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.mawaqit-status {
+    max-width: 780px;
+    width: 100%;
+    margin: 0 auto 18px auto;
+    padding: 10px 16px;
+    text-align: center;
+    font-size: 12.5px;
+    color: var(--text-muted);
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+}
+
+.mawaqit-status-error {
+    color: #c9564f;
+    border-color: rgba(201, 86, 79, 0.4);
+}
+
+.mawaqit-summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    max-width: 780px;
+    width: 100%;
+    margin: 0 auto 22px auto;
+    padding: 16px 20px;
+}
+
+.mawaqit-next-prayer {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.mawaqit-next-prayer strong {
+    color: var(--gold-bright);
+}
+
+.mawaqit-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 14px;
+    max-width: 900px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.mawaqit-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 20px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    transition: border-color 0.3s ease, transform 0.2s ease;
+}
+
+.mawaqit-card:hover {
+    border-color: var(--border-color-active);
+    transform: translateY(-2px);
+}
+
+.mawaqit-card.active {
+    background: var(--gold-gradient, linear-gradient(135deg, #cca46c, #ab824b));
+    border-color: transparent;
+}
+
+.mawaqit-card-icon {
+    width: 26px;
+    height: 26px;
+    color: var(--gold-primary);
+}
+
+.mawaqit-card.active .mawaqit-card-icon {
+    color: #1c1510;
+}
+
+.mawaqit-card-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.mawaqit-card.active .mawaqit-card-name {
+    color: #1c1510;
+}
+
+body.light-theme .mawaqit-card.active .mawaqit-card-name {
+    color: #2c2013;
+}
+
+.mawaqit-card-time {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-family: var(--font-title);
+}
+
+.mawaqit-card.active .mawaqit-card-time {
+    color: #2c2013;
+    font-weight: 600;
+}
+
+@media (max-width: 768px) {
+    .location-picker {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .location-update-btn {
+        width: 100%;
+    }
+    .mawaqit-grid {
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    }
+}
+
+/* ==========================================================================
+   Master Sidebar Toggle — hides the left widgets column entirely,
+   collapses the right nav sidebar to an icon-only rail (ChatGPT-style)
+   ========================================================================== */
+
+.sidebar-master-toggle {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    cursor: pointer;
+    z-index: 5;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.sidebar-master-toggle:hover {
+    color: var(--gold-primary);
+    border-color: var(--border-color-active);
+}
+
+.sidebar-master-toggle svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Left widgets column disappears completely */
+.app-container.sidebar-collapsed .left-column {
+    display: none;
+}
+
+/* Right nav sidebar shrinks to an icon-only rail */
+.app-container.sidebar-collapsed .right-column {
+    width: 76px;
+    padding: 24px 12px;
+    align-items: center;
+}
+
+.app-container.sidebar-collapsed .sidebar-master-toggle {
+    position: static;
+    margin-bottom: 18px;
+}
+
+.app-container.sidebar-collapsed .app-brand {
+    margin-bottom: 16px;
+}
+
+.app-container.sidebar-collapsed .brand-title,
+.app-container.sidebar-collapsed .brand-slogan {
+    display: none;
+}
+
+.app-container.sidebar-collapsed .sidebar-nav {
+    width: 100%;
+}
+
+.app-container.sidebar-collapsed .nav-item {
+    justify-content: center;
+    padding: 12px 0;
+    gap: 0;
+}
+
+.app-container.sidebar-collapsed .nav-item span {
+    display: none;
+}
+
+.app-container.sidebar-collapsed .mosque-silhouette {
+    display: none;
+}
+
+.app-container.sidebar-collapsed .theme-switch-container {
+    flex-direction: column;
+    gap: 8px;
+    border-top: none;
+    padding-top: 0;
+}
+
+.app-container.sidebar-collapsed .switch-label {
+    display: none;
+}
+
+@media (max-width: 860px) {
+    .sidebar-master-toggle {
+        display: none;
+    }
+    /* Defensive reset in case the collapsed state was set at a wider viewport */
+    .app-container.sidebar-collapsed .left-column {
+        display: flex;
+    }
+    .app-container.sidebar-collapsed .right-column {
+        width: 280px;
+        padding: 24px 20px;
+        align-items: stretch;
+    }
+    .app-container.sidebar-collapsed .app-brand {
+        margin-bottom: 25px;
+    }
+    .app-container.sidebar-collapsed .brand-title,
+    .app-container.sidebar-collapsed .brand-slogan,
+    .app-container.sidebar-collapsed .nav-item span,
+    .app-container.sidebar-collapsed .switch-label {
+        display: revert;
+    }
+    .app-container.sidebar-collapsed .nav-item {
+        justify-content: flex-start;
+        padding: 10px 14px;
+        gap: 12px;
+    }
+    .app-container.sidebar-collapsed .mosque-silhouette {
+        display: block;
+    }
+    .app-container.sidebar-collapsed .theme-switch-container {
+        flex-direction: row;
+        border-top: 1px solid var(--border-color);
+        padding-top: 12px;
+    }
+}
+
+/* ==========================================================================
+   Favorites Page (المفضلة)
+   ========================================================================== */
+
+.favorites-grid {
+    max-width: 1100px;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+}
+
+.favorite-source-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid transparent;
+}
+
+.favorite-badge-chat {
+    color: #6ea8fe;
+    background: rgba(110, 168, 254, 0.1);
+    border-color: rgba(110, 168, 254, 0.25);
+}
+
+.favorite-badge-hadith {
+    color: var(--gold-bright);
+    background: rgba(204, 164, 108, 0.12);
+    border-color: rgba(204, 164, 108, 0.25);
+}
+
+.favorite-badge-dua {
+    color: #3f9d5c;
+    background: rgba(63, 157, 92, 0.1);
+    border-color: rgba(63, 157, 92, 0.25);
+}
+
+.favorite-title {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.favorite-text {
+    font-size: 14px;
+    line-height: 1.9;
+}
+
+.favorite-meta {
+    font-size: 11px;
+}
+
+@media (max-width: 768px) {
+    .favorites-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ==========================================================================
+   Delete Confirmation Modal
+   ========================================================================== */
+
+.confirm-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.confirm-modal {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 18px;
+    padding: 28px 24px;
+    max-width: 360px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+}
+
+.confirm-modal-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 14px auto;
+    border-radius: 50%;
+    background: rgba(201, 86, 79, 0.12);
+    color: #c9564f;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.confirm-modal-icon svg {
+    width: 22px;
+    height: 22px;
+}
+
+.confirm-modal-title {
+    font-family: var(--font-title);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 8px 0;
+}
+
+.confirm-modal-text {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin: 0 0 20px 0;
+}
+
+.confirm-modal-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.confirm-modal-btn {
+    flex: 1;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border-color);
+    transition: all 0.2s ease;
+}
+
+.confirm-modal-cancel {
+    background: transparent;
+    color: var(--text-secondary);
+}
+
+.confirm-modal-cancel:hover {
+    border-color: var(--border-color-active);
+    color: var(--text-primary);
+}
+
+.confirm-modal-confirm {
+    background: #c9564f;
+    color: #ffffff;
+    border-color: #c9564f;
+}
+
+.confirm-modal-confirm:hover {
+    filter: brightness(1.08);
+}

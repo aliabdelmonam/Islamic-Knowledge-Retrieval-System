@@ -12,8 +12,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const welcomeState = document.getElementById("welcomeState");
     const mockupCard = document.getElementById("mockupCard");
     const themeSwitch = document.getElementById("themeSwitch");
-    document.body.classList.add("light-theme");
-    themeSwitch.checked = false;
+    const savedTheme = localStorage.getItem("noor-theme");
+    const isDark = savedTheme === "dark";
+    document.body.classList.toggle("light-theme", !isDark);
+    themeSwitch.checked = isDark;
     const retrieveModeBtn = document.getElementById("retrieveModeBtn");
     const suggestionChips = document.querySelectorAll(".suggestion-chips .chip-btn");
     const leftColumn = document.querySelector(".left-column");
@@ -38,16 +40,138 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     leftSidebarOverlay.addEventListener("click", closeLeftSidebar);
 
+    // ---- Master sidebar toggle: hides the left widgets column, collapses the right nav to icons ----
+    const sidebarMasterToggle = document.getElementById("sidebarMasterToggle");
+    const appContainer = document.querySelector(".app-container");
+    if (sidebarMasterToggle && appContainer) {
+        const collapsedSaved = localStorage.getItem("noor-sidebar-collapsed") === "true";
+        appContainer.classList.toggle("sidebar-collapsed", collapsedSaved);
+
+        sidebarMasterToggle.addEventListener("click", () => {
+            const collapsed = !appContainer.classList.contains("sidebar-collapsed");
+            appContainer.classList.toggle("sidebar-collapsed", collapsed);
+            localStorage.setItem("noor-sidebar-collapsed", collapsed ? "true" : "false");
+        });
+    }
+
     let retrieveOnlySession = false; // true = call /retrieve instead of /ask
+
+    // ---- Favorites store helpers (shared format with duas.js / ahadith.js / favorites.js) ----
+    const FAVORITES_KEY = "noor-favorites";
+
+    function getFavorites() {
+        try {
+            return JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]");
+        } catch (err) {
+            return [];
+        }
+    }
+
+    function saveFavorites(list) {
+        localStorage.setItem(FAVORITES_KEY, JSON.stringify(list));
+    }
+
+    function addFavorite(entry) {
+        const list = getFavorites();
+        if (!list.some((item) => item.id === entry.id)) {
+            list.push({ ...entry, date: new Date().toISOString() });
+            saveFavorites(list);
+        }
+    }
+
 
     // 1. Theme Toggle implementation
     themeSwitch.addEventListener("change", (e) => {
         if (!e.target.checked) {
             document.body.classList.add("light-theme");
+            localStorage.setItem("noor-theme", "light");
         } else {
             document.body.classList.remove("light-theme");
+            localStorage.setItem("noor-theme", "dark");
         }
     });
+
+    // ---- Prayer Times Widget (left sidebar) ----
+    function initPrayerWidget() {
+        const widget = document.querySelector(".prayer-widget");
+        if (!widget) return;
+
+        const cityNameEl = widget.querySelector(".city-name");
+        const hijriTextEl = widget.querySelector(".hijri-date-text");
+        const prayerItems = widget.querySelectorAll(".prayer-time-item");
+        const scheduleBtn = widget.querySelector(".show-schedule-btn");
+        const PRAYER_ORDER = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
+
+        if (scheduleBtn) {
+            scheduleBtn.addEventListener("click", () => {
+                window.location.href = "mawaqit.html";
+            });
+        }
+
+        function formatTime12h(hhmm) {
+            const [hStr, mStr] = hhmm.split(":");
+            let h = parseInt(hStr, 10);
+            const period = h >= 12 ? "م" : "ص";
+            h = h % 12;
+            if (h === 0) h = 12;
+            return `${h}:${mStr} ${period}`;
+        }
+
+        function minutesSinceMidnight(hhmm) {
+            const [h, m] = hhmm.split(":").map((v) => parseInt(v, 10));
+            return h * 60 + m;
+        }
+
+        async function loadWidgetTimings() {
+            const saved = JSON.parse(localStorage.getItem("noor-mawaqit-location") || "null");
+            const countryEn = saved?.countryEn || "Saudi Arabia";
+            const cityEn = saved?.cityEn || "Makkah";
+            const cityAr = saved?.cityAr || "مكة المكرمة";
+            const countryAr = saved?.countryAr || "السعودية";
+
+            try {
+                const url = `https://api.aladhan.com/v1/timingsByCity?city=${encodeURIComponent(cityEn)}&country=${encodeURIComponent(countryEn)}&method=5`;
+                const res = await fetch(url);
+                if (!res.ok) throw new Error("HTTP error " + res.status);
+                const json = await res.json();
+                if (json.code !== 200 || !json.data) throw new Error("Invalid response");
+
+                const timings = json.data.timings;
+                const now = new Date();
+                const nowMinutes = now.getHours() * 60 + now.getMinutes();
+                let nextIndex = 0;
+                let found = false;
+                PRAYER_ORDER.forEach((key, i) => {
+                    const raw = timings[key].split(" ")[0];
+                    if (!found && minutesSinceMidnight(raw) > nowMinutes) {
+                        nextIndex = i;
+                        found = true;
+                    }
+                });
+
+                prayerItems.forEach((item, i) => {
+                    const key = PRAYER_ORDER[i];
+                    if (!key) return;
+                    const raw = timings[key].split(" ")[0];
+                    const valEl = item.querySelector(".prayer-val");
+                    if (valEl) valEl.textContent = formatTime12h(raw);
+                    item.classList.toggle("active", i === nextIndex);
+                });
+
+                if (cityNameEl) cityNameEl.textContent = `${cityAr}، ${countryAr}`;
+                if (hijriTextEl) {
+                    const h = json.data.date.hijri;
+                    hijriTextEl.textContent = `${h.day} ${h.month.ar} ${h.year} هـ`;
+                }
+            } catch (err) {
+                console.error("Prayer widget fetch failed:", err);
+                // Keep the default placeholder values shown in the markup as a fallback
+            }
+        }
+
+        loadWidgetTimings();
+    }
+    initPrayerWidget();
 
     // 2. Toggle retrieve-only mode
     retrieveModeBtn.addEventListener("click", () => {
@@ -110,6 +234,24 @@ document.addEventListener("DOMContentLoaded", () => {
             } catch (err) {
                 console.error("Copy failed:", err);
             }
+        }
+
+        if (action === "favorite") {
+            const contentEl = bubble.querySelector(".markdown-content") || bubble.querySelector(".source-document-details");
+            const textToSave = contentEl ? contentEl.innerText.trim() : "";
+            const msgId = bubble.dataset.msgId || ("msg_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8));
+            bubble.dataset.msgId = msgId;
+
+            addFavorite({
+                id: msgId,
+                type: "chat",
+                title: bubble.dataset.question || "",
+                text: textToSave,
+                meta: null
+            });
+
+            btn.classList.add("active");
+            window.location.href = "favorites.html";
         }
 
         if (action === "regenerate") {
@@ -217,7 +359,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return bubble;
     }
 
-    // Markup for the response action bar (like / dislike / regenerate / copy)
+    // Markup for the response action bar (like / dislike / favorite / regenerate / copy)
     function actionBarHTML() {
         return `
             <div class="message-actions">
@@ -231,6 +373,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M17 14V2"/>
                         <path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22h0a3.13 3.13 0 0 1-3-3.88Z"/>
+                    </svg>
+                </button>
+                <button type="button" class="msg-action-btn" data-action="favorite" title="إضافة للمفضلة" aria-label="إضافة للمفضلة">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
                     </svg>
                 </button>
                 <button type="button" class="msg-action-btn" data-action="regenerate" title="إعادة المحاولة" aria-label="إعادة المحاولة">
