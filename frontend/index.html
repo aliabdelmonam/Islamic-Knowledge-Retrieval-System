@@ -1,18 +1,23 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نور الهداية — رفيقك في المعرفة الإسلامية</title>
-    
+    <title>نور الهداية - المحادثة </title>
+    <link rel="icon" type="image/svg+xml" href="images/logo.svg">
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;600;700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+    <link
+        href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;600;700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
     <!-- CSS Stylesheet -->
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <script>
         (function () {
@@ -26,11 +31,12 @@
         })();
     </script>
     <div class="app-container">
-        
+
         <!-- ==================== COLUMN 1: RIGHT PANEL (SIDEBAR NAV) ==================== -->
         <aside class="right-column">
             <!-- Master sidebar toggle: hides the widgets column, collapses this nav to icons -->
-            <button type="button" class="sidebar-master-toggle" id="sidebarMasterToggle" title="طي/فتح الشريط الجانبي" aria-label="طي أو فتح الشريط الجانبي">
+            <button type="button" class="sidebar-master-toggle" id="sidebarMasterToggle" title="طي/فتح الشريط الجانبي"
+                aria-label="طي أو فتح الشريط الجانبي">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                     <line x1="15" y1="3" x2="15" y2="21"></line>
@@ -39,23 +45,12 @@
             <!-- App Brand / Title -->
             <div class="app-brand">
                 <div class="logo-wrapper">
-                    <!-- Beautiful Golden Arched Mosque Dome Icon -->
-                    <svg class="app-logo" viewBox="0 0 100 100" fill="none">
-                        <path d="M50,15 C68,40 80,48 80,68 C80,82 68,85 50,85 C32,85 20,82 20,68 C20,48 32,40 50,15 Z" stroke="url(#goldGradient)" stroke-width="3" fill="rgba(202, 164, 108, 0.05)"/>
-                        <path d="M50,30 C60,48 70,55 70,68 C70,78 61,80 50,80 C39,80 30,78 30,68 C30,55 40,48 50,30 Z" fill="url(#goldGradient)"/>
-                        <defs>
-                            <linearGradient id="goldGradient" x1="0" y1="0" x2="1" y2="1">
-                                <stop offset="0%" stop-color="#cca46c"/>
-                                <stop offset="50%" stop-color="#e5c18b"/>
-                                <stop offset="100%" stop-color="#ab824b"/>
-                            </linearGradient>
-                        </defs>
-                    </svg>
+                    <img src="images/logo.svg" alt="بصيرة" class="app-logo">
                 </div>
                 <h1 class="brand-title">نور الهداية</h1>
                 <p class="brand-slogan">رفيقك في المعرفة الإسلامية</p>
             </div>
-            
+
             <!-- Navigation Menu -->
             <nav class="sidebar-nav">
                 <a href="#" class="nav-item active">
@@ -72,10 +67,13 @@
                     <span>الأحاديث</span>
                 </a>
                 <a href="duas.html" class="nav-item">
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
-                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                        <line x1="12" y1="19" x2="12" y2="22"></line>
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M6 18c-1.5 0-2.5-1.2-2.5-2.8V9c0-1.4 1.1-2.5 2.5-2.5S8.5 7.6 8.5 9v3.5"></path>
+                        <path d="M6 6.5V5c0-1.4 1.1-2.5 2.5-2.5S11 3.6 11 5v7"></path>
+                        <path d="M18 18c1.5 0 2.5-1.2 2.5-2.8V9c0-1.4-1.1-2.5-2.5-2.5S15.5 7.6 15.5 9v3.5"></path>
+                        <path d="M18 6.5V5c0-1.4-1.1-2.5-2.5-2.5S13 3.6 13 5v7"></path>
+                        <path d="M12 20v-8"></path>
                     </svg>
                     <span>الأدعية</span>
                 </a>
@@ -95,12 +93,14 @@
                 <a href="settings.html" class="nav-item">
                     <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="3"></circle>
-                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                        <path
+                            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z">
+                        </path>
                     </svg>
                     <span>الإعدادات</span>
                 </a>
             </nav>
-            
+
             <!-- Silhouette & Dark Mode Switch at the Bottom -->
             <div class="sidebar-footer">
                 <div class="mosque-silhouette"></div>
@@ -113,51 +113,55 @@
                         <input type="checkbox" id="themeSwitch">
                         <span class="slider round"></span>
                     </label>
-                    
+
                 </div>
             </div>
         </aside>
-        
+
         <!-- ==================== COLUMN 2: CHAT & DYNAMIC PANEL ==================== -->
         <main class="center-column">
-            <!-- Arched Window Frame Overlay & Backlighting -->            
+            <!-- Arched Window Frame Overlay & Backlighting -->
             <div class="chat-viewport">
                 <!-- Welcome State -->
                 <div class="chat-welcome-state" id="welcomeState">
                     <div class="welcome-heading">
                         <h2 class="welcome-title">
                             السلام عليكم
-                            <svg class="welcome-leaf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.18.03.35-.08.38-.26l.83-4.52a23.9 23.9 0 0 1 3.95-.33c1.38 0 2.72.06 4 .19l.83 4.54c.03.18.2.3.38.27A10 10 0 0 0 12 2z"/>
-                                <path d="M12 22V12"/>
+                            <svg class="welcome-leaf" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path
+                                    d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.18.03.35-.08.38-.26l.83-4.52a23.9 23.9 0 0 1 3.95-.33c1.38 0 2.72.06 4 .19l.83 4.54c.03.18.2.3.38.27A10 10 0 0 0 12 2z" />
+                                <path d="M12 22V12" />
                             </svg>
                         </h2>
                         <p class="welcome-subtitle">كيف يمكنني مساعدتك اليوم؟</p>
                     </div>
-                    
+
                     <!-- Hardcoded Example Card matching picture exactly -->
                     <div class="sample-search-card" id="mockupCard">
                         <div class="sample-search-query">
                             <span>ما هو قول الله عن الرحمة في القرآن الكريم؟</span>
                         </div>
-                        
+
                         <div class="sample-result-response">
                             <div class="bot-avatar-badge">
                                 <svg viewBox="0 0 24 24" class="avatar-svg" fill="currentColor">
-                                    <path d="M12 3L2 12h3v8h14v-8h3z"/>
-                                    <path d="M12 5l-7 7h3v6h8v-6h3z" fill="#cca46c"/>
+                                    <path d="M12 3L2 12h3v8h14v-8h3z" />
+                                    <path d="M12 5l-7 7h3v6h8v-6h3z" fill="#cca46c" />
                                 </svg>
                             </div>
                             <div class="response-content">
-                                <p class="response-lead">يذكر الله رحمته في القرآن الكريم مرات عديدة، ومن أجمل الآيات قوله:</p>
-                                
+                                <p class="response-lead">يذكر الله رحمته في القرآن الكريم مرات عديدة، ومن أجمل الآيات
+                                    قوله:</p>
+
                                 <div class="quran-quote-block">
                                     <p class="ayah-arabic">۞ وَرَحْمَتِي وَسِعَتْ كُلَّ شَيْءٍ ۞</p>
                                     <p class="ayah-translation">"ورَحْمَتي وسِعَتْ كُلَّ شَيءٍ"</p>
                                     <span class="ayah-citation">سورة الأعراف - 156</span>
                                 </div>
-                                
-                                <p class="response-follow">هذه الآية تبين أن رحمة الله واسعة تشمل كل خلقه، وهي من أعظم صفات الله سبحانه وتعالى.</p>
+
+                                <p class="response-follow">هذه الآية تبين أن رحمة الله واسعة تشمل كل خلقه، وهي من أعظم
+                                    صفات الله سبحانه وتعالى.</p>
                             </div>
                         </div>
                     </div>
@@ -203,24 +207,29 @@
                             <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
                         </svg>
                     </button>
-                    <input type="text" class="chat-input" id="chatInput" placeholder="اسألني عن الإسلام..." autocomplete="off">
-                    <button type="button" class="input-action-btn" id="retrieveModeBtn" title="تبديل إلى نمط الاسترجاع فقط">
+                    <input type="text" class="chat-input" id="chatInput" placeholder="اسألني عن الإسلام..."
+                        autocomplete="off">
+                    <button type="button" class="input-action-btn" id="retrieveModeBtn"
+                        title="تبديل إلى نمط الاسترجاع فقط">
                         <svg viewBox="0 0 24 24" class="action-icon" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                            <path
+                                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253">
+                            </path>
                         </svg>
                     </button>
                 </form>
-                
+
                 <span class="assistant-disclaimer">
                     <svg viewBox="0 0 24 24" class="shield-check" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
                         <path d="m9 11 2 2 4-4"></path>
                     </svg>
-                    إجابات الذكاء الاصطناعي تعتمد على المصادر الإسلامية الموثوقة. يرجى التحقق من المعلومات المهمة مع أهل العلم.
+                    إجابات الذكاء الاصطناعي تعتمد على المصادر الإسلامية الموثوقة. يرجى التحقق من المعلومات المهمة مع أهل
+                    العلم.
                 </span>
             </div>
         </main>
-        
+
         <!-- ==================== COLUMN 3: WIDGETS & SIDE INFO ==================== -->
         <aside class="left-column">
             <!-- Prayer Times Widget -->
@@ -246,11 +255,12 @@
                         <span class="hijri-date-text">24 ذو القعدة 1445 هـ</span>
                     </span>
                 </div>
-                
+
                 <div class="prayer-times-list">
                     <div class="prayer-time-item">
                         <span class="prayer-name">
-                            <svg class="prayer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg class="prayer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
                                 <path d="M17 18a5 5 0 0 0-10 0"></path>
                                 <line x1="12" y1="2" x2="12" y2="9"></line>
                                 <line x1="4.22" y1="10.22" x2="5.64" y2="11.64"></line>
@@ -266,7 +276,8 @@
                     </div>
                     <div class="prayer-time-item">
                         <span class="prayer-name">
-                            <svg class="prayer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg class="prayer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
                                 <path d="M17 18a5 5 0 0 0-10 0"></path>
                                 <line x1="12" y1="2" x2="12" y2="9"></line>
                                 <line x1="4.22" y1="10.22" x2="5.64" y2="11.64"></line>
@@ -282,7 +293,8 @@
                     </div>
                     <div class="prayer-time-item active">
                         <span class="prayer-name">
-                            <svg class="prayer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg class="prayer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
                                 <circle cx="12" cy="12" r="4"></circle>
                                 <line x1="12" y1="2" x2="12" y2="4"></line>
                                 <line x1="12" y1="20" x2="12" y2="22"></line>
@@ -299,7 +311,8 @@
                     </div>
                     <div class="prayer-time-item">
                         <span class="prayer-name">
-                            <svg class="prayer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg class="prayer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
                                 <circle cx="12" cy="14" r="4"></circle>
                                 <line x1="12" y1="2" x2="12" y2="6"></line>
                                 <line x1="4.93" y1="7.93" x2="6.7" y2="9.7"></line>
@@ -313,7 +326,8 @@
                     </div>
                     <div class="prayer-time-item">
                         <span class="prayer-name">
-                            <svg class="prayer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg class="prayer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
                                 <path d="M17 18a5 5 0 0 0-10 0"></path>
                                 <line x1="12" y1="9" x2="12" y2="2"></line>
                                 <line x1="4.22" y1="10.22" x2="5.64" y2="11.64"></line>
@@ -329,7 +343,8 @@
                     </div>
                     <div class="prayer-time-item">
                         <span class="prayer-name">
-                            <svg class="prayer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg class="prayer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
                                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
                             </svg>
                             العشاء
@@ -337,7 +352,7 @@
                         <span class="prayer-val">8:21 م</span>
                     </div>
                 </div>
-                
+
                 <button class="btn btn-text show-schedule-btn">
                     <span>عرض الجدول الكامل</span>
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
@@ -345,7 +360,7 @@
                     </svg>
                 </button>
             </div>
-            
+
             <!-- Qibla Widget -->
             <div class="card qibla-widget">
                 <div class="widget-header">
@@ -357,38 +372,38 @@
                         <span>اتجاه القبلة</span>
                     </div>
                 </div>
-                
+
                 <div class="qibla-compass-container">
                     <div class="compass-ring">
                         <!-- Decorative tick-mark ring -->
                         <svg class="tick-ring" viewBox="0 0 126 126" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="63" cy="63" r="60.5" class="tick-ring-outer"/>
-                            <circle cx="63" cy="63" r="56.5" class="tick-ring-inner"/>
+                            <circle cx="63" cy="63" r="60.5" class="tick-ring-outer" />
+                            <circle cx="63" cy="63" r="56.5" class="tick-ring-inner" />
                             <g stroke-linecap="round">
-                                <line x1="63.0" y1="14.0" x2="63.0" y2="3.0" class="tick-major"/>
-                                <line x1="77.2" y1="9.9" x2="78.5" y2="5.0" class="tick-minor"/>
-                                <line x1="90.5" y1="15.4" x2="93.0" y2="11.0" class="tick-minor"/>
-                                <line x1="99.8" y1="26.2" x2="105.4" y2="20.6" class="tick-mid"/>
-                                <line x1="110.6" y1="35.5" x2="115.0" y2="33.0" class="tick-minor"/>
-                                <line x1="116.1" y1="48.8" x2="121.0" y2="47.5" class="tick-minor"/>
-                                <line x1="112.0" y1="63.0" x2="123.0" y2="63.0" class="tick-major"/>
-                                <line x1="116.1" y1="77.2" x2="121.0" y2="78.5" class="tick-minor"/>
-                                <line x1="110.6" y1="90.5" x2="115.0" y2="93.0" class="tick-minor"/>
-                                <line x1="99.8" y1="99.8" x2="105.4" y2="105.4" class="tick-mid"/>
-                                <line x1="90.5" y1="110.6" x2="93.0" y2="115.0" class="tick-minor"/>
-                                <line x1="77.2" y1="116.1" x2="78.5" y2="121.0" class="tick-minor"/>
-                                <line x1="63.0" y1="112.0" x2="63.0" y2="123.0" class="tick-major"/>
-                                <line x1="48.8" y1="116.1" x2="47.5" y2="121.0" class="tick-minor"/>
-                                <line x1="35.5" y1="110.6" x2="33.0" y2="115.0" class="tick-minor"/>
-                                <line x1="26.2" y1="99.8" x2="20.6" y2="105.4" class="tick-mid"/>
-                                <line x1="15.4" y1="90.5" x2="11.0" y2="93.0" class="tick-minor"/>
-                                <line x1="9.9" y1="77.2" x2="5.0" y2="78.5" class="tick-minor"/>
-                                <line x1="14.0" y1="63.0" x2="3.0" y2="63.0" class="tick-major"/>
-                                <line x1="9.9" y1="48.8" x2="5.0" y2="47.5" class="tick-minor"/>
-                                <line x1="15.4" y1="35.5" x2="11.0" y2="33.0" class="tick-minor"/>
-                                <line x1="26.2" y1="26.2" x2="20.6" y2="20.6" class="tick-mid"/>
-                                <line x1="35.5" y1="15.4" x2="33.0" y2="11.0" class="tick-minor"/>
-                                <line x1="48.8" y1="9.9" x2="47.5" y2="5.0" class="tick-minor"/>
+                                <line x1="63.0" y1="14.0" x2="63.0" y2="3.0" class="tick-major" />
+                                <line x1="77.2" y1="9.9" x2="78.5" y2="5.0" class="tick-minor" />
+                                <line x1="90.5" y1="15.4" x2="93.0" y2="11.0" class="tick-minor" />
+                                <line x1="99.8" y1="26.2" x2="105.4" y2="20.6" class="tick-mid" />
+                                <line x1="110.6" y1="35.5" x2="115.0" y2="33.0" class="tick-minor" />
+                                <line x1="116.1" y1="48.8" x2="121.0" y2="47.5" class="tick-minor" />
+                                <line x1="112.0" y1="63.0" x2="123.0" y2="63.0" class="tick-major" />
+                                <line x1="116.1" y1="77.2" x2="121.0" y2="78.5" class="tick-minor" />
+                                <line x1="110.6" y1="90.5" x2="115.0" y2="93.0" class="tick-minor" />
+                                <line x1="99.8" y1="99.8" x2="105.4" y2="105.4" class="tick-mid" />
+                                <line x1="90.5" y1="110.6" x2="93.0" y2="115.0" class="tick-minor" />
+                                <line x1="77.2" y1="116.1" x2="78.5" y2="121.0" class="tick-minor" />
+                                <line x1="63.0" y1="112.0" x2="63.0" y2="123.0" class="tick-major" />
+                                <line x1="48.8" y1="116.1" x2="47.5" y2="121.0" class="tick-minor" />
+                                <line x1="35.5" y1="110.6" x2="33.0" y2="115.0" class="tick-minor" />
+                                <line x1="26.2" y1="99.8" x2="20.6" y2="105.4" class="tick-mid" />
+                                <line x1="15.4" y1="90.5" x2="11.0" y2="93.0" class="tick-minor" />
+                                <line x1="9.9" y1="77.2" x2="5.0" y2="78.5" class="tick-minor" />
+                                <line x1="14.0" y1="63.0" x2="3.0" y2="63.0" class="tick-major" />
+                                <line x1="9.9" y1="48.8" x2="5.0" y2="47.5" class="tick-minor" />
+                                <line x1="15.4" y1="35.5" x2="11.0" y2="33.0" class="tick-minor" />
+                                <line x1="26.2" y1="26.2" x2="20.6" y2="20.6" class="tick-mid" />
+                                <line x1="35.5" y1="15.4" x2="33.0" y2="11.0" class="tick-minor" />
+                                <line x1="48.8" y1="9.9" x2="47.5" y2="5.0" class="tick-minor" />
                             </g>
                         </svg>
 
@@ -402,90 +417,100 @@
                                 <svg viewBox="0 0 64 64" class="kaaba-svg" xmlns="http://www.w3.org/2000/svg">
                                     <defs>
                                         <linearGradient id="kaabaFront" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="0%" stop-color="#3a2c1d"/>
-                                            <stop offset="55%" stop-color="#1c1510"/>
-                                            <stop offset="100%" stop-color="#0a0806"/>
+                                            <stop offset="0%" stop-color="#3a2c1d" />
+                                            <stop offset="55%" stop-color="#1c1510" />
+                                            <stop offset="100%" stop-color="#0a0806" />
                                         </linearGradient>
                                         <linearGradient id="kaabaSide" x1="0" y1="0" x2="1" y2="0">
-                                            <stop offset="0%" stop-color="#18120c"/>
-                                            <stop offset="100%" stop-color="#000000"/>
+                                            <stop offset="0%" stop-color="#18120c" />
+                                            <stop offset="100%" stop-color="#000000" />
                                         </linearGradient>
                                         <linearGradient id="kaabaTop" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="0%" stop-color="#54432f"/>
-                                            <stop offset="100%" stop-color="#231b13"/>
+                                            <stop offset="0%" stop-color="#54432f" />
+                                            <stop offset="100%" stop-color="#231b13" />
                                         </linearGradient>
                                         <linearGradient id="kaabaGold" x1="0" y1="0" x2="1" y2="0">
-                                            <stop offset="0%" stop-color="#f2dcae"/>
-                                            <stop offset="45%" stop-color="#cca46c"/>
-                                            <stop offset="100%" stop-color="#9c7540"/>
+                                            <stop offset="0%" stop-color="#f2dcae" />
+                                            <stop offset="45%" stop-color="#cca46c" />
+                                            <stop offset="100%" stop-color="#9c7540" />
                                         </linearGradient>
                                         <linearGradient id="kaabaGoldSide" x1="0" y1="0" x2="1" y2="0">
-                                            <stop offset="0%" stop-color="#cca46c"/>
-                                            <stop offset="100%" stop-color="#7d5c30"/>
+                                            <stop offset="0%" stop-color="#cca46c" />
+                                            <stop offset="100%" stop-color="#7d5c30" />
                                         </linearGradient>
                                         <radialGradient id="kaabaShadow" cx="50%" cy="50%" r="50%">
-                                            <stop offset="0%" stop-color="#000000" stop-opacity="0.55"/>
-                                            <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+                                            <stop offset="0%" stop-color="#000000" stop-opacity="0.55" />
+                                            <stop offset="100%" stop-color="#000000" stop-opacity="0" />
                                         </radialGradient>
                                         <linearGradient id="kaabaTopSheen" x1="0" y1="0" x2="1" y2="1">
-                                            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.16"/>
-                                            <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+                                            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.16" />
+                                            <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
                                         </linearGradient>
                                     </defs>
 
                                     <!-- Ground contact shadow -->
-                                    <ellipse cx="30" cy="53.5" rx="21" ry="3.6" fill="url(#kaabaShadow)"/>
+                                    <ellipse cx="30" cy="53.5" rx="21" ry="3.6" fill="url(#kaabaShadow)" />
 
                                     <!-- Top face -->
-                                    <path d="M14,20 L40,20 L52,13 L26,13 Z" fill="url(#kaabaTop)"/>
-                                    <path d="M14,20 L40,20 L52,13 L26,13 Z" fill="url(#kaabaTopSheen)"/>
+                                    <path d="M14,20 L40,20 L52,13 L26,13 Z" fill="url(#kaabaTop)" />
+                                    <path d="M14,20 L40,20 L52,13 L26,13 Z" fill="url(#kaabaTopSheen)" />
                                     <!-- Side face (shaded) -->
-                                    <path d="M40,20 L52,13 L52,43 L40,50 Z" fill="url(#kaabaSide)"/>
+                                    <path d="M40,20 L52,13 L52,43 L40,50 Z" fill="url(#kaabaSide)" />
                                     <!-- Front face -->
-                                    <path d="M14,20 L40,20 L40,50 L14,50 Z" fill="url(#kaabaFront)"/>
+                                    <path d="M14,20 L40,20 L40,50 L14,50 Z" fill="url(#kaabaFront)" />
 
                                     <!-- Fabric drape folds on front face -->
                                     <g stroke="#000000" stroke-opacity="0.35" stroke-width="0.5" fill="none">
-                                        <path d="M19,34 Q19.5,41 18.5,49"/>
-                                        <path d="M26,34 Q26.6,41 25.6,49"/>
+                                        <path d="M19,34 Q19.5,41 18.5,49" />
+                                        <path d="M26,34 Q26.6,41 25.6,49" />
                                     </g>
                                     <g stroke="#ffffff" stroke-opacity="0.05" stroke-width="0.5" fill="none">
-                                        <path d="M22,34 Q22.5,41 21.5,49"/>
+                                        <path d="M22,34 Q22.5,41 21.5,49" />
                                     </g>
 
                                     <!-- Gold Hizam band (front) -->
-                                    <path d="M14,28 L40,28 L40,33 L14,33 Z" fill="url(#kaabaGold)"/>
+                                    <path d="M14,28 L40,28 L40,33 L14,33 Z" fill="url(#kaabaGold)" />
                                     <!-- Gold Hizam band (side) -->
-                                    <path d="M40,28 L52,21 L52,26 L40,33 Z" fill="url(#kaabaGoldSide)"/>
+                                    <path d="M40,28 L52,21 L52,26 L40,33 Z" fill="url(#kaabaGoldSide)" />
                                     <!-- Stitched trim edges -->
-                                    <path d="M14,28.4 L40,28.4 M40,28.4 L52,21.4" stroke="#fbecd2" stroke-width="0.35" stroke-opacity="0.7"/>
-                                    <path d="M14,32.6 L40,32.6 M40,32.6 L52,25.6" stroke="#5c431f" stroke-width="0.4" stroke-opacity="0.6"/>
+                                    <path d="M14,28.4 L40,28.4 M40,28.4 L52,21.4" stroke="#fbecd2" stroke-width="0.35"
+                                        stroke-opacity="0.7" />
+                                    <path d="M14,32.6 L40,32.6 M40,32.6 L52,25.6" stroke="#5c431f" stroke-width="0.4"
+                                        stroke-opacity="0.6" />
 
                                     <!-- Kiswa embroidery stitch pattern -->
-                                    <line x1="15" y1="30.5" x2="39" y2="30.5" stroke="#5c431f" stroke-width="0.5" stroke-opacity="0.55" stroke-dasharray="1.1,1.3"/>
+                                    <line x1="15" y1="30.5" x2="39" y2="30.5" stroke="#5c431f" stroke-width="0.5"
+                                        stroke-opacity="0.55" stroke-dasharray="1.1,1.3" />
 
                                     <!-- Bab al-Kaaba (door) -->
-                                    <path d="M32,48 L32,37 Q32,33 35.5,33 Q39,33 39,37 L39,48 Z" fill="url(#kaabaGold)" stroke="#5c431f" stroke-width="0.5"/>
-                                    <line x1="35.5" y1="34" x2="35.5" y2="48" stroke="#5c431f" stroke-width="0.4" stroke-opacity="0.8"/>
-                                    <path d="M32.8,37.5 Q35.5,34.3 38.2,37.5" fill="none" stroke="#5c431f" stroke-width="0.4" stroke-opacity="0.7"/>
+                                    <path d="M32,48 L32,37 Q32,33 35.5,33 Q39,33 39,37 L39,48 Z" fill="url(#kaabaGold)"
+                                        stroke="#5c431f" stroke-width="0.5" />
+                                    <line x1="35.5" y1="34" x2="35.5" y2="48" stroke="#5c431f" stroke-width="0.4"
+                                        stroke-opacity="0.8" />
+                                    <path d="M32.8,37.5 Q35.5,34.3 38.2,37.5" fill="none" stroke="#5c431f"
+                                        stroke-width="0.4" stroke-opacity="0.7" />
                                     <!-- Door ring handle -->
-                                    <circle cx="35.5" cy="43" r="1" fill="none" stroke="#4a3618" stroke-width="0.5"/>
+                                    <circle cx="35.5" cy="43" r="1" fill="none" stroke="#4a3618" stroke-width="0.5" />
 
                                     <!-- Hajar al-Aswad corner marker -->
-                                    <circle cx="15.5" cy="48.5" r="2.1" fill="url(#kaabaGold)"/>
-                                    <circle cx="15.5" cy="48.5" r="1.1" fill="#0d0a08"/>
-                                    <circle cx="15" cy="48" r="0.35" fill="#ffffff" fill-opacity="0.35"/>
+                                    <circle cx="15.5" cy="48.5" r="2.1" fill="url(#kaabaGold)" />
+                                    <circle cx="15.5" cy="48.5" r="1.1" fill="#0d0a08" />
+                                    <circle cx="15" cy="48" r="0.35" fill="#ffffff" fill-opacity="0.35" />
 
                                     <!-- Crisp outline -->
-                                    <path d="M14,20 L40,20 L52,13 L26,13 Z M40,20 L52,13 L52,43 L40,50 L40,20 M14,20 L40,20 L40,50 L14,50 Z" fill="none" stroke="#000" stroke-width="0.45" opacity="0.55"/>
+                                    <path
+                                        d="M14,20 L40,20 L52,13 L26,13 Z M40,20 L52,13 L52,43 L40,50 L40,20 M14,20 L40,20 L40,50 L14,50 Z"
+                                        fill="none" stroke="#000" stroke-width="0.45" opacity="0.55" />
                                     <!-- Top edge highlight -->
-                                    <path d="M14,20 L40,20 L52,13" fill="none" stroke="#8a7355" stroke-width="0.4" opacity="0.5"/>
+                                    <path d="M14,20 L40,20 L52,13" fill="none" stroke="#8a7355" stroke-width="0.4"
+                                        opacity="0.5" />
                                 </svg>
                             </div>
                         </div>
                     </div>
                     <div class="qibla-degree-badge">
-                        <svg viewBox="0 0 24 24" class="degree-badge-icon" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg viewBox="0 0 24 24" class="degree-badge-icon" fill="none" stroke="currentColor"
+                            stroke-width="2">
                             <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
                             <circle cx="12" cy="12" r="10"></circle>
                         </svg>
@@ -493,7 +518,7 @@
                         <span class="qibla-degree-label">شمال شرق</span>
                     </div>
                 </div>
-                
+
                 <div class="qibla-caption">
                     <span class="qibla-sub">موقعك الحالي</span>
                     <span class="qibla-loc">
@@ -505,7 +530,7 @@
                     </span>
                 </div>
             </div>
-            
+
             <!-- Ayat/Hadith Slider Widget -->
             <div class="card quote-slider-widget">
                 <div class="quote-slider-content">
@@ -537,4 +562,5 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.2.4/purify.min.js"></script>
     <script src="app.js"></script>
 </body>
+
 </html>
