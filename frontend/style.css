@@ -2172,6 +2172,11 @@ body.light-theme .mawaqit-card.active .mawaqit-card-name {
     display: none;
 }
 
+/* Independent setting (from the Settings page) to show/hide the left widgets column only */
+.app-container.left-hidden .left-column {
+    display: none;
+}
+
 /* Right nav sidebar shrinks to an icon-only rail */
 .app-container.sidebar-collapsed .right-column {
     width: 76px;
@@ -2411,4 +2416,97 @@ body.light-theme .mawaqit-card.active .mawaqit-card-name {
 
 .confirm-modal-confirm:hover {
     filter: brightness(1.08);
+}
+
+/* ==========================================================================
+   Settings Page (الإعدادات)
+   ========================================================================== */
+
+.settings-section {
+    max-width: 720px;
+    width: 100%;
+    margin: 0 auto 20px auto;
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.settings-section-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+}
+
+.settings-section-icon {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    color: var(--gold-primary);
+    margin-top: 2px;
+}
+
+.settings-section-title {
+    font-family: var(--font-title);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 4px 0;
+}
+
+.settings-section-desc {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    margin: 0;
+}
+
+.settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 16px;
+}
+
+.settings-row-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.settings-location-fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.settings-location-fields .location-picker-field {
+    flex: 1;
+    min-width: 160px;
+}
+
+.settings-current-location {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.settings-save-note {
+    max-width: 720px;
+    width: 100%;
+    margin: 0 auto;
+    text-align: center;
+    font-size: 12.5px;
+    color: #3f9d5c;
+    font-weight: 600;
+}
+
+@media (max-width: 768px) {
+    .settings-section {
+        padding: 18px;
+    }
+    .settings-location-fields {
+        flex-direction: column;
+    }
 }

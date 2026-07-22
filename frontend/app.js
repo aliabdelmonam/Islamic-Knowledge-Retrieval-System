@@ -54,6 +54,12 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // ---- Left sidebar visibility (set from the Settings page) ----
+    if (appContainer) {
+        const leftHidden = localStorage.getItem("noor-leftbar-hidden") === "true";
+        appContainer.classList.toggle("left-hidden", leftHidden);
+    }
+
     let retrieveOnlySession = false; // true = call /retrieve instead of /ask
 
     // ---- Favorites store helpers (shared format with duas.js / ahadith.js / favorites.js) ----
