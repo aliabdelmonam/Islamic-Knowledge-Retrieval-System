@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نور الهداية - المحادثة </title>
+    <title>مواقيت الصلاة - نور الهداية</title>
     <link rel="icon" type="image/svg+xml" href="images/logo.svg">
 
     <!-- Google Fonts -->
@@ -53,7 +53,7 @@
 
             <!-- Navigation Menu -->
             <nav class="sidebar-nav">
-                <a href="#" class="nav-item active">
+                <a href="index.html" class="nav-item">
                     <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                     </svg>
@@ -67,8 +67,7 @@
                     <span>الأحاديث</span>
                 </a>
                 <a href="duas.html" class="nav-item">
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M6 18c-1.5 0-2.5-1.2-2.5-2.8V9c0-1.4 1.1-2.5 2.5-2.5S8.5 7.6 8.5 9v3.5"></path>
                         <path d="M6 6.5V5c0-1.4 1.1-2.5 2.5-2.5S11 3.6 11 5v7"></path>
                         <path d="M18 18c1.5 0 2.5-1.2 2.5-2.8V9c0-1.4-1.1-2.5-2.5-2.5S15.5 7.6 15.5 9v3.5"></path>
@@ -77,7 +76,7 @@
                     </svg>
                     <span>الأدعية</span>
                 </a>
-                <a href="mawaqit.html" class="nav-item">
+                <a href="mawaqit.html" class="nav-item active">
                     <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"></circle>
                         <polyline points="12 6 12 12 16 14"></polyline>
@@ -105,9 +104,6 @@
             <div class="sidebar-footer">
                 <div class="mosque-silhouette"></div>
                 <div class="theme-switch-container">
-                    <!-- <svg class="footer-icon sun-moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                    </svg> -->
                     <span class="switch-label">الوضع الليلي</span>
                     <label class="switch">
                         <input type="checkbox" id="themeSwitch">
@@ -118,249 +114,70 @@
             </div>
         </aside>
 
-        <!-- ==================== COLUMN 2: CHAT & DYNAMIC PANEL ==================== -->
-        <main class="center-column">
-            <!-- Arched Window Frame Overlay & Backlighting -->
-            <div class="chat-viewport">
-                <!-- Welcome State -->
-                <div class="chat-welcome-state" id="welcomeState">
-                    <div class="welcome-heading">
-                        <h2 class="welcome-title">
-                            السلام عليكم
-                            <svg class="welcome-leaf" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        <!-- ==================== COLUMN 2: PRAYER TIMES PAGE ==================== -->
+        <main class="center-column duas-page">
+            <div class="duas-viewport">
+                <!-- Page Header -->
+                <div class="duas-page-header">
+                    <h2 class="duas-page-title">
+                        مواقيت الصلاة
+                        <svg class="welcome-leaf" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                    </h2>
+                    <p class="duas-page-subtitle">اختر دولتك ومدينتك لعرض مواقيت الصلاة الدقيقة الخاصة بك</p>
+                </div>
+
+                <!-- Location Selector -->
+                <div class="location-picker card">
+                    <div class="location-picker-field">
+                        <label for="countrySelect">الدولة</label>
+                        <select id="countrySelect" class="location-select"></select>
+                    </div>
+                    <div class="location-picker-field">
+                        <label for="citySelect">المدينة</label>
+                        <select id="citySelect" class="location-select"></select>
+                    </div>
+                    <button type="button" id="updateTimingsBtn" class="btn btn-primary location-update-btn">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M21 12a9 9 0 1 1-2.64-6.36"></path>
+                            <polyline points="21 3 21 9 15 9"></polyline>
+                        </svg>
+                        <span>تحديث المواقيت</span>
+                    </button>
+                </div>
+
+                <!-- Status / loading / error messages -->
+                <div class="mawaqit-status" id="mawaqitStatus" style="display:none;"></div>
+
+                <!-- Current location + hijri date summary -->
+                <div class="mawaqit-summary card" id="mawaqitSummary" style="display:none;">
+                    <div class="location-details">
+                        <span class="city-name" id="mawaqitCityName">مكة المكرمة، السعودية</span>
+                        <span class="hijri-date" id="mawaqitHijriDate">
+                            <svg viewBox="0 0 24 24" class="date-icon" fill="none" stroke="currentColor"
                                 stroke-width="2">
-                                <path
-                                    d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.18.03.35-.08.38-.26l.83-4.52a23.9 23.9 0 0 1 3.95-.33c1.38 0 2.72.06 4 .19l.83 4.54c.03.18.2.3.38.27A10 10 0 0 0 12 2z" />
-                                <path d="M12 22V12" />
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
                             </svg>
-                        </h2>
-                        <p class="welcome-subtitle">كيف يمكنني مساعدتك اليوم؟</p>
+                            <span id="mawaqitHijriText">—</span>
+                        </span>
                     </div>
-
-                    <!-- Hardcoded Example Card matching picture exactly -->
-                    <div class="sample-search-card" id="mockupCard">
-                        <div class="sample-search-query">
-                            <span>ما هو قول الله عن الرحمة في القرآن الكريم؟</span>
-                        </div>
-
-                        <div class="sample-result-response">
-                            <div class="bot-avatar-badge">
-                                <svg viewBox="0 0 24 24" class="avatar-svg" fill="currentColor">
-                                    <path d="M12 3L2 12h3v8h14v-8h3z" />
-                                    <path d="M12 5l-7 7h3v6h8v-6h3z" fill="#cca46c" />
-                                </svg>
-                            </div>
-                            <div class="response-content">
-                                <p class="response-lead">يذكر الله رحمته في القرآن الكريم مرات عديدة، ومن أجمل الآيات
-                                    قوله:</p>
-
-                                <div class="quran-quote-block">
-                                    <p class="ayah-arabic">۞ وَرَحْمَتِي وَسِعَتْ كُلَّ شَيْءٍ ۞</p>
-                                    <p class="ayah-translation">"ورَحْمَتي وسِعَتْ كُلَّ شَيءٍ"</p>
-                                    <span class="ayah-citation">سورة الأعراف - 156</span>
-                                </div>
-
-                                <p class="response-follow">هذه الآية تبين أن رحمة الله واسعة تشمل كل خلقه، وهي من أعظم
-                                    صفات الله سبحانه وتعالى.</p>
-                            </div>
-                        </div>
-                    </div>
+                    <div class="mawaqit-next-prayer" id="mawaqitNextPrayer"></div>
                 </div>
 
-                <!-- Dynamic Chat Message Stream -->
-                <div class="chat-message-stream" id="messageStream" style="display: none;">
-                    <!-- Dynamically appended messages will appear here -->
-                </div>
-            </div>
-
-            <!-- Footer Area: Suggestions and Input -->
-            <div class="chat-footer">
-                <div class="suggestion-chips">
-                    <span class="chip-label">قد ترغب في:</span>
-                    <button class="chip-btn" data-query="ما هي أركان الإيمان؟">
-                        <svg viewBox="0 0 24 24" class="chip-icon" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                        </svg>
-                        <span>ما هي أركان الإيمان؟</span>
-                    </button>
-                    <button class="chip-btn" data-query="كيف أتوب إلى الله؟">
-                        <svg viewBox="0 0 24 24" class="chip-icon" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                        </svg>
-                        <span>كيف أتوب إلى الله؟</span>
-                    </button>
-                    <button class="chip-btn" data-query="ما حكم الربا؟">
-                        <svg viewBox="0 0 24 24" class="chip-icon" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 20h9"></path>
-                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-                        </svg>
-                        <span>ما حكم الربا؟</span>
-                    </button>
-                </div>
-
-                <!-- Input form -->
-                <form class="chat-input-container" id="chatForm">
-                    <button type="submit" class="send-btn" id="sendBtn" aria-label="ارسال">
-                        <svg viewBox="0 0 24 24" class="send-icon" fill="none" stroke="currentColor" stroke-width="2.5">
-                            <line x1="22" y1="2" x2="11" y2="13"></line>
-                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                        </svg>
-                    </button>
-                    <input type="text" class="chat-input" id="chatInput" placeholder="اسألني عن الإسلام..."
-                        autocomplete="off">
-                    <button type="button" class="input-action-btn" id="retrieveModeBtn"
-                        title="تبديل إلى نمط الاسترجاع فقط">
-                        <svg viewBox="0 0 24 24" class="action-icon" fill="none" stroke="currentColor" stroke-width="2">
-                            <path
-                                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253">
-                            </path>
-                        </svg>
-                    </button>
-                </form>
-
-                <span class="assistant-disclaimer">
-                    <svg viewBox="0 0 24 24" class="shield-check" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                        <path d="m9 11 2 2 4-4"></path>
-                    </svg>
-                    إجابات الذكاء الاصطناعي تعتمد على المصادر الإسلامية الموثوقة. يرجى التحقق من المعلومات المهمة مع أهل
-                    العلم.
-                </span>
+                <!-- Full prayer times grid -->
+                <div class="mawaqit-grid" id="mawaqitGrid"></div>
             </div>
         </main>
 
         <!-- ==================== COLUMN 3: WIDGETS & SIDE INFO ==================== -->
         <aside class="left-column">
-            <!-- Prayer Times Widget -->
-            <div class="card prayer-widget">
-                <div class="widget-header">
-                    <div class="header-title">
-                        <svg class="widget-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <polyline points="12 6 12 12 16 14"></polyline>
-                        </svg>
-                        <span>مواقيت الصلاة</span>
-                    </div>
-                </div>
-                <div class="location-details">
-                    <span class="city-name">مكة المكرمة</span>
-                    <span class="hijri-date">
-                        <svg viewBox="0 0 24 24" class="date-icon" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                            <line x1="16" y1="2" x2="16" y2="6"></line>
-                            <line x1="8" y1="2" x2="8" y2="6"></line>
-                            <line x1="3" y1="10" x2="21" y2="10"></line>
-                        </svg>
-                        <span class="hijri-date-text">24 ذو القعدة 1445 هـ</span>
-                    </span>
-                </div>
-
-                <div class="prayer-times-list">
-                    <div class="prayer-time-item">
-                        <span class="prayer-name">
-                            <svg class="prayer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <path d="M17 18a5 5 0 0 0-10 0"></path>
-                                <line x1="12" y1="2" x2="12" y2="9"></line>
-                                <line x1="4.22" y1="10.22" x2="5.64" y2="11.64"></line>
-                                <line x1="1" y1="18" x2="3" y2="18"></line>
-                                <line x1="21" y1="18" x2="23" y2="18"></line>
-                                <line x1="18.36" y1="11.64" x2="19.78" y2="10.22"></line>
-                                <line x1="23" y1="22" x2="1" y2="22"></line>
-                                <polyline points="8 6 12 2 16 6"></polyline>
-                            </svg>
-                            الفجر
-                        </span>
-                        <span class="prayer-val">4:12 ص</span>
-                    </div>
-                    <div class="prayer-time-item">
-                        <span class="prayer-name">
-                            <svg class="prayer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <path d="M17 18a5 5 0 0 0-10 0"></path>
-                                <line x1="12" y1="2" x2="12" y2="9"></line>
-                                <line x1="4.22" y1="10.22" x2="5.64" y2="11.64"></line>
-                                <line x1="1" y1="18" x2="3" y2="18"></line>
-                                <line x1="21" y1="18" x2="23" y2="18"></line>
-                                <line x1="18.36" y1="11.64" x2="19.78" y2="10.22"></line>
-                                <line x1="23" y1="22" x2="1" y2="22"></line>
-                                <polyline points="8 10 12 6 16 10"></polyline>
-                            </svg>
-                            الشروق
-                        </span>
-                        <span class="prayer-val">5:33 ص</span>
-                    </div>
-                    <div class="prayer-time-item active">
-                        <span class="prayer-name">
-                            <svg class="prayer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <circle cx="12" cy="12" r="4"></circle>
-                                <line x1="12" y1="2" x2="12" y2="4"></line>
-                                <line x1="12" y1="20" x2="12" y2="22"></line>
-                                <line x1="4.93" y1="4.93" x2="6.34" y2="6.34"></line>
-                                <line x1="17.66" y1="17.66" x2="19.07" y2="19.07"></line>
-                                <line x1="2" y1="12" x2="4" y2="12"></line>
-                                <line x1="20" y1="12" x2="22" y2="12"></line>
-                                <line x1="4.93" y1="19.07" x2="6.34" y2="17.66"></line>
-                                <line x1="17.66" y1="6.34" x2="19.07" y2="4.93"></line>
-                            </svg>
-                            الظهر
-                        </span>
-                        <span class="prayer-val">12:18 م</span>
-                    </div>
-                    <div class="prayer-time-item">
-                        <span class="prayer-name">
-                            <svg class="prayer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <circle cx="12" cy="14" r="4"></circle>
-                                <line x1="12" y1="2" x2="12" y2="6"></line>
-                                <line x1="4.93" y1="7.93" x2="6.7" y2="9.7"></line>
-                                <line x1="19.07" y1="7.93" x2="17.3" y2="9.7"></line>
-                                <line x1="2" y1="14" x2="4.5" y2="14"></line>
-                                <line x1="19.5" y1="14" x2="22" y2="14"></line>
-                            </svg>
-                            العصر
-                        </span>
-                        <span class="prayer-val">3:45 م</span>
-                    </div>
-                    <div class="prayer-time-item">
-                        <span class="prayer-name">
-                            <svg class="prayer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <path d="M17 18a5 5 0 0 0-10 0"></path>
-                                <line x1="12" y1="9" x2="12" y2="2"></line>
-                                <line x1="4.22" y1="10.22" x2="5.64" y2="11.64"></line>
-                                <line x1="1" y1="18" x2="3" y2="18"></line>
-                                <line x1="21" y1="18" x2="23" y2="18"></line>
-                                <line x1="18.36" y1="11.64" x2="19.78" y2="10.22"></line>
-                                <line x1="23" y1="22" x2="1" y2="22"></line>
-                                <polyline points="16 5 12 9 8 5"></polyline>
-                            </svg>
-                            المغرب
-                        </span>
-                        <span class="prayer-val">6:51 م</span>
-                    </div>
-                    <div class="prayer-time-item">
-                        <span class="prayer-name">
-                            <svg class="prayer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2">
-                                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                            </svg>
-                            العشاء
-                        </span>
-                        <span class="prayer-val">8:21 م</span>
-                    </div>
-                </div>
-
-                <button class="btn btn-text show-schedule-btn">
-                    <span>عرض الجدول الكامل</span>
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="15 18 9 12 15 6"></polyline>
-                    </svg>
-                </button>
-            </div>
-
             <!-- Qibla Widget -->
             <div class="card qibla-widget">
                 <div class="widget-header">
@@ -406,7 +223,6 @@
                                 <line x1="48.8" y1="9.9" x2="47.5" y2="5.0" class="tick-minor" />
                             </g>
                         </svg>
-
 
                         <div class="compass-dial">
                             <div class="compass-pointer">
@@ -534,8 +350,8 @@
             <!-- Ayat/Hadith Slider Widget -->
             <div class="card quote-slider-widget">
                 <div class="quote-slider-content">
-                    <p class="quote-text">"ومَا أَرْسَلْنَاكَ إِلَّا رَحْمَةً لِّلْعَالَمِينَ"</p>
-                    <span class="quote-source">سورة الأنبياء - 107</span>
+                    <p class="quote-text">"وَأَقِمِ الصَّلَاةَ لِذِكْرِي"</p>
+                    <span class="quote-source">سورة طه - 14</span>
                 </div>
                 <div class="slider-dots">
                     <span class="circle-dot"></span>
@@ -558,9 +374,7 @@
     <div class="left-sidebar-overlay" id="leftSidebarOverlay"></div>
 
     <!-- JS Application Logic -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/16.3.0/lib/marked.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.2.4/purify.min.js"></script>
-    <script src="app.js"></script>
+    <script src="mawaqit.js"></script>
 </body>
 
 </html>
