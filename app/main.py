@@ -124,6 +124,29 @@ async def lifespan(app: FastAPI):
     app.state.rag_chain = build_rag_chain(llm, settings.system_role)
     logger.info("[6/7] LLM and RAG chain ready.")
 
+    # 7. Agentic RAG graph (optional)
+    app.state.agent_graph = None
+    if settings.use_agentic_rag:
+        from app.services.agentic_rag import build_nodes
+        app.state.agent_graph = build_nodes(
+            llm=llm,
+            vectorstore=app.state.vectorstore,
+            bm25_index=app.state.bm25_index,
+            all_chunks=app.state.all_chunks,
+            parent_store=app.state.parent_store,
+            reranker=app.state.reranker,
+            qdrant_client=app.state.qdrant_client if app.state.category_collection_ready else None,
+            embedding_model_name=settings.embedding_model if app.state.category_collection_ready else "",
+            category_collection_name=settings.category_collection_name,
+            category_top_k=settings.category_top_k,
+            k=settings.retriever_k,
+            fetch_k=settings.retriever_fetch_k,
+            system_role=settings.system_role,
+        )
+        logger.info("[7/7] Agentic RAG graph compiled.")
+    else:
+        logger.info("[7/7] Agentic RAG disabled (USE_AGENTIC_RAG=false).")
+
     logger.info("=== Hadith RAG API ready to serve requests ===")
     yield
 

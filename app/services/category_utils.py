@@ -10,7 +10,7 @@ This module extracts the high-level categories for use in filtering.
 from __future__ import annotations
 
 import logging
-from typing import Sequence
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ def parse_high_level_categories(categories_value) -> list[str]:
     if categories_value is None:
         return []
 
-    # If it's a list (from grouped metadata), flatten all entries
+    # Normalize input to a list of strings
     if isinstance(categories_value, (list, tuple)):
         raw_strings = [str(v) for v in categories_value if v and str(v).strip()]
     else:
@@ -51,17 +51,14 @@ def parse_high_level_categories(categories_value) -> list[str]:
     result: list[str] = []
 
     for raw in raw_strings:
-        # Split on Arabic comma (،)
-        parts = raw.split("،")
-        for part in parts:
+        # Split on Arabic comma with optional surrounding whitespace
+        for part in re.split(r"\s+،\s+", raw):
             part = part.strip()
             if not part:
                 continue
-            # Extract high-level: take everything before the first " - "
-            if " - " in part:
-                high_level = part.split(" - ", 1)[0].strip()
-            else:
-                high_level = part.strip()
+
+            # Extract the main category (before first - or –)
+            high_level = re.split(r"\s*[-–]\s*", part, maxsplit=1)[0].strip()
 
             if high_level and high_level not in seen:
                 seen.add(high_level)

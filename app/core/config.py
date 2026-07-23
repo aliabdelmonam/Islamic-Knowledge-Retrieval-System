@@ -99,6 +99,10 @@ class Settings(BaseSettings):
     # ── Query Rewriting ────────────────────────────────────────────────────────
     query_rewrite_model: str = "llama-3.3-70b-versatile"
 
+    # ── Agentic RAG ───────────────────────────────────────────────────────────
+    use_agentic_rag: bool = True        # True = use LangGraph agent by default
+    agentic_max_loops: int = 3           # Max retrieve-rewrite cycles
+
     # ── API ────────────────────────────────────────────────────────────────────
     api_title: str = "Hadith RAG API"
     api_version: str = "1.0.0"

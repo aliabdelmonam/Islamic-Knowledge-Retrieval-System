@@ -1,4 +1,4 @@
-"""POST /api/v1/ask — full RAG: retrieve + rerank + LLM generation."""
+"""POST /api/v1/ask — full RAG: retrieve + rerank + LLM generation (regular or agentic)."""
 from __future__ import annotations
 
 import logging
@@ -16,6 +16,22 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+def _to_retrieved_items(results) -> list[RetrievedItem]:
+    """Convert RetrievedResult list to API response items."""
+    return [
+        RetrievedItem(
+            hadith=r.hadith,
+            sharh=r.sharh,
+            rawy=r.rawy,
+            source=r.source,
+            hokm=r.hokm,
+            page_id=r.page_id,
+            rerank_score=r.rerank_score,
+        )
+        for r in results
+    ]
+
+
 @router.post("/ask", response_model=AskResponse)
 async def ask_endpoint(body: AskRequest, request: Request) -> AskResponse:
     state = request.app.state
@@ -25,6 +41,55 @@ async def ask_endpoint(body: AskRequest, request: Request) -> AskResponse:
         if getattr(state, attr, None) is None:
             raise PipelineNotReadyError(attr)
 
+    # Determine if we should use agentic mode:
+    #   per-request flag > server config default
+    use_agentic = body.use_agentic if body.use_agentic is not None else settings.use_agentic_rag
+
+    # ── Agentic RAG path ──────────────────────────────────────────────────
+    if use_agentic:
+        if getattr(state, "agent_graph", None) is None:
+            # Build on-the-fly if not pre-built at startup
+            from app.services.agentic_rag import build_nodes
+            from app.services.llm import build_llm
+
+            state.agent_graph = build_nodes(
+                llm=state.llm,
+                vectorstore=state.vectorstore,
+                bm25_index=state.bm25_index,
+                all_chunks=state.all_chunks,
+                parent_store=state.parent_store,
+                reranker=state.reranker,
+                qdrant_client=state.qdrant_client if getattr(state, "category_collection_ready", False) else None,
+                embedding_model_name=settings.embedding_model if getattr(state, "category_collection_ready", False) else "",
+                category_collection_name=settings.category_collection_name,
+                category_top_k=settings.category_top_k,
+                k=body.k,
+                fetch_k=settings.retriever_fetch_k,
+                system_role=settings.system_role,
+            )
+            logger.info("Agent graph built on-the-fly.")
+
+        from app.services.agentic_rag import run_agentic_rag
+
+        try:
+            result = run_agentic_rag(query=body.question, agent_graph=state.agent_graph)
+        except Exception as exc:
+            logger.exception("Agentic RAG error: %s", exc)
+            raise LLMError(str(exc))
+
+        # Use good_documents (graded relevant) as sources; fall back to all
+        docs = result["good_documents"] or result["all_documents"]
+
+        return AskResponse(
+            answer=result["answer"],
+            sources=_to_retrieved_items(docs),
+            query_rewritten=result["final_query"] if result["final_query"] != result["original_query"] else None,
+            agentic=True,
+            loop_count=result["loop_count"],
+            query_history=result["query_history"],
+        )
+
+    # ── Regular RAG path (unchanged) ──────────────────────────────────────
     question = body.question
     query_rewritten: str | None = None
 
@@ -62,21 +127,9 @@ async def ask_endpoint(body: AskRequest, request: Request) -> AskResponse:
         logger.exception("LLM error: %s", exc)
         raise LLMError(str(exc))
 
-    sources = [
-        RetrievedItem(
-            hadith=r.hadith,
-            sharh=r.sharh,
-            rawy=r.rawy,
-            source=r.source,
-            hokm=r.hokm,
-            page_id=r.page_id,
-            rerank_score=r.rerank_score,
-        )
-        for r in results
-    ]
-
     return AskResponse(
         answer=answer,
-        sources=sources,
+        sources=_to_retrieved_items(results),
         query_rewritten=query_rewritten,
+        agentic=False,
     )

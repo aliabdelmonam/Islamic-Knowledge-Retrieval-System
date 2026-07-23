@@ -20,6 +20,10 @@ class AskResponse(BaseModel):
     answer: str
     sources: list[RetrievedItem]
     query_rewritten: Optional[str] = None
+    # Agentic RAG metadata (populated only when agentic mode is used)
+    agentic: bool = False
+    loop_count: Optional[int] = None
+    query_history: Optional[list[str]] = None
 
 
 class RetrieveResponse(BaseModel):

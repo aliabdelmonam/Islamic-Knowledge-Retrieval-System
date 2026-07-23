@@ -29,7 +29,11 @@ from app.services.retriever import RetrievedResult, retrieve, retrieve_with_cate
 
 logger = logging.getLogger(__name__)
 
-MAX_LOOPS = 3  # Maximum retrieve-rewrite cycles before forcing generation
+try:
+    from app.core.config import settings as _settings
+    MAX_LOOPS = _settings.agentic_max_loops
+except Exception:
+    MAX_LOOPS = 3  # fallback
 
 
 # ── Agent State ────────────────────────────────────────────────────────────────
