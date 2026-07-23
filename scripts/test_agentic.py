@@ -106,6 +106,8 @@ def load_components():
         fanar_model=settings.fanar_model,
         fanar_api_key=settings.fanar_api_key or "",
         fanar_base_url=settings.fanar_base_url,
+        gemini_model=settings.gemini_model,
+        google_api_key=settings.google_api_key or "",
         temperature=settings.llm_temperature,
         max_tokens=settings.llm_max_tokens,
     )
@@ -130,14 +132,15 @@ def main():
         settings.reranker_model,
     )
 
-    ls_key = os.getenv("LANGCHAIN_API_KEY")
-    if not ls_key:
-        logger.warning(
-            "LANGCHAIN_API_KEY not set — LangSmith tracing will be disabled. "
-            "Add LANGCHAIN_API_KEY to your .env to enable cloud tracing."
-        )
-    else:
-        logger.info("LangSmith tracing enabled → project: %s", os.getenv("LANGCHAIN_PROJECT"))
+    # ls_key = os.getenv("LANGCHAIN_API_KEY")
+    # print(f"langchain api key is : {ls_key}")
+    # if not ls_key:
+    #     logger.warning(
+    #         "LANGCHAIN_API_KEY not set — LangSmith tracing will be disabled. "
+    #         "Add LANGCHAIN_API_KEY to your .env to enable cloud tracing."
+    #     )
+    # else:
+    #     logger.info("LangSmith tracing enabled → project: %s", os.getenv("LANGCHAIN_PROJECT"))
 
     components = load_components()
 

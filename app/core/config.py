@@ -68,8 +68,8 @@ class Settings(BaseSettings):
 
     # ── LLM ────────────────────────────────────────────────────────────────────
     llm_provider: Literal[
-        "openai", "ollama", "groq", "huggingface", "huggingface_local", "fanar", "sbg"
-    ] = "sbg"
+        "openai", "ollama", "groq", "huggingface", "huggingface_local", "fanar", "sbg", "gemini"
+    ] = "gemini"
     sbg_model_id: str = "openai.gpt-oss-120b-1:0"
     sbg_base_url: str = "http://apiaccess.iti.net.eg/api/v1"
     sbg_api_key: str | None = None
@@ -80,8 +80,10 @@ class Settings(BaseSettings):
     groq_api_key: str | None = None
     huggingface_model: str = "silma-ai/SILMA-Kashif-2B-Instruct-v1.0"
     hf_token: str | None = None
+    gemini_model: str = "gemini-3.6-flash"
+    google_api_key: str | None = None
     llm_temperature: float = 0.1
-    llm_max_tokens: int = 512
+    llm_max_tokens: int = 5000
 
     # ── Fanar ──────────────────────────────────────────────────────────────────
     fanar_model: str = "Fanar"
@@ -91,10 +93,13 @@ class Settings(BaseSettings):
     # ── Prompt ─────────────────────────────────────────────────────────────────
     prompt_language: str = "ar"
     system_role: str = (
-        "انت عالم دين اسلامي تجاوب علي اسئلة من خلال النص المسند اليك و حاول تجنب تاليف كلام ديني "
-        "و قم بارفاق الاحاديث الواردة و صحتها و مصدر الاحاديث المتسخدمة"
-        "اذا لم تجد جوابا في السياق . ارشده الي استشارة عالم اسلامي افضل للحصول علي اجابة دقيقة"
-    )
+    "أنت عالم متخصص في العلوم الإسلامية. أجب عن أسئلة المستخدم اعتمادًا حصريًا على النصوص والسياق المقدم لك، "
+    "ولا تضف معلومات أو أحكامًا شرعية من عندك إذا لم تكن مدعومة بالسياق. "
+    "عند الاستشهاد بحديث نبوي، اذكر نص الحديث، ودرجة صحته، ومصدره، واسم الكتاب ورقم الحديث إن كان متوفرًا. "
+    "إذا تعددت الأدلة، فرتبها بوضوح مع بيان وجه الاستدلال. "
+    "إذا لم يكن في السياق ما يكفي للإجابة، فاذكر ذلك صراحة، ولا تخمّن أو تؤلف إجابة، "
+    "وانصح المستخدم بالرجوع إلى عالم أو جهة إفتاء موثوقة للحصول على فتوى أو إجابة دقيقة."
+)
 
     # ── Query Rewriting ────────────────────────────────────────────────────────
     query_rewrite_model: str = "llama-3.3-70b-versatile"
@@ -109,7 +114,7 @@ class Settings(BaseSettings):
     debug: bool = False
 
     # ── LangSmith ──────────────────────────────────────────────────────────────
-    langsmith_tracing: bool = False
+    langsmith_tracing: bool = True
     langsmith_endpoint: str | None = None
     langsmith_api_key: str | None = None
     langsmith_project: str | None = None
@@ -139,3 +144,17 @@ class Settings(BaseSettings):
 
 # Module-level singleton — import `settings` everywhere
 settings = Settings()
+
+# ── LangSmith/LangChain Environment Variable Forwarding ───────────────────────────
+if settings.langsmith_tracing:
+    import os
+    os.environ["LANGCHAIN_TRACING_V2"] = "true"
+    if settings.langsmith_project:
+        # Strip any quotes that might be present in the .env file
+        project_name = settings.langsmith_project.strip('"').strip("'")
+        os.environ["LANGCHAIN_PROJECT"] = project_name
+    if settings.langsmith_api_key:
+        os.environ["LANGCHAIN_API_KEY"] = settings.langsmith_api_key
+    if settings.langsmith_endpoint:
+        os.environ["LANGCHAIN_ENDPOINT"] = settings.langsmith_endpoint
+

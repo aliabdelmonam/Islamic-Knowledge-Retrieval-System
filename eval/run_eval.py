@@ -87,6 +87,8 @@ def load_components():
         fanar_model=settings.fanar_model,
         fanar_api_key=settings.fanar_api_key or "",
         fanar_base_url=settings.fanar_base_url,
+        gemini_model=settings.gemini_model,
+        google_api_key=settings.google_api_key or "",
         temperature=settings.llm_temperature,
         max_tokens=settings.llm_max_tokens,
     )
