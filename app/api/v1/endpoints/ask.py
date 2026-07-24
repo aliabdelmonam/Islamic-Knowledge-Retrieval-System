@@ -45,6 +45,21 @@ async def ask_endpoint(body: AskRequest, request: Request) -> AskResponse:
     #   per-request flag > server config default
     use_agentic = body.use_agentic if body.use_agentic is not None else settings.use_agentic_rag
 
+    # Prompt injection check
+    if settings.enable_prompt_injection_detection:
+        from app.services.security import prompt_injection_score
+        score, matched = prompt_injection_score(body.question)
+        if score >= settings.prompt_injection_threshold:
+            logger.warning(
+                "Prompt injection attempt detected! Score: %d, matched groups: %s, query: %r",
+                score, matched, body.question
+            )
+            return AskResponse(
+                answer="أعتذر، لا يمكنني الاستجابة لهذا الطلب. كيف يمكنني مساعدتك في سؤلك حول الأحاديث النبوية الشريفة؟",
+                sources=[],
+                agentic=use_agentic,
+            )
+
     # ── Agentic RAG path ──────────────────────────────────────────────────
     if use_agentic:
         if getattr(state, "agent_graph", None) is None:

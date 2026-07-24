@@ -138,6 +138,10 @@ class Settings(BaseSettings):
     use_agentic_rag: bool = True        # True = use LangGraph agent by default
     agentic_max_loops: int = 3           # Max retrieve-rewrite cycles
 
+    # ── Security ──────────────────────────────────────────────────────────────
+    enable_prompt_injection_detection: bool = True
+    prompt_injection_threshold: int = 1
+
     # ── API ────────────────────────────────────────────────────────────────────
     api_title: str = "Hadith RAG API"
     api_version: str = "1.0.0"
