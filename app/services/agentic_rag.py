@@ -35,8 +35,7 @@ try:
     from app.core.config import settings as _settings
     MAX_LOOPS = _settings.agentic_max_loops
 except Exception:
-    MAX_LOOPS = 3  # fallback
-
+    MAX_LOOPS = 2  # fallback
 
 # ── Agent State ────────────────────────────────────────────────────────────────
 
@@ -53,7 +52,6 @@ class AgentState(TypedDict):
     answer: str                                 # Final generated answer
     current_k: int                              # Current top-k (may decay per loop)
     current_fetch_k: int                        # Current fetch_k (may decay per loop)
-    tool_found_hadiths: List[RetrievedResult]   # Hadiths looking up via BM25 on clean hadith
 
 
 # ── Grading prompt (hadith-only, no sharh) ─────────────────────────────────────
@@ -85,33 +83,42 @@ _REWRITE_PROMPT = ChatPromptTemplate.from_messages(
         (
             "system",
             """
-أنت خبير في العلوم الإسلامية وبنية استرجاع الأحاديث النبوية.
-مهمتك هي مساعدتنا في صياغة استعلام البحث واقتراح أحاديث نبوية قد تجيب على سؤال المستخدم.
+أنت خبير في العلوم الإسلامية وبناء استعلامات البحث.
 
-يجب أن تقوم بأمرين:
-1. صياغة استعلام بحث جديد فريد ومناسب (query) لزيادة احتمالية العثور على الأحاديث المناسبة (مثل استخراج المفهوم الإسلامي الأشمل وعناوين الأبواب الفقهية أو العقائدية).
-2. اقتراح قائمة من نصوص أو أجزاء من أحاديث نبوية (candidate_hadiths) تعتقد أنها تجيب عن السؤال مباشرة، ليتم البحث عنها في قاعدة بيانات الأحاديث الكاملة وجلب نصوصها الدقيقة ومخرجاتها (الراوي، المصدر، الحكم).
+هدفك ليس إعادة صياغة السؤال فقط، بل إنشاء استعلام جديد يزيد احتمال العثور
+على الأحاديث المناسبة.
 
-أخرج الناتج بصيغة JSON فقط كالتالي:
-{{
-  "query": "الاستعلام الجديد المقترح للبحث",
-  "candidate_hadiths": [
-    "نص أو جزء من الحديث المقترح الأول",
-    "نص أو جزء من الحديث المقترح الثاني"
-  ]
-}}
+اتبع الخطوات التالية داخلياً:
 
-قواعد هامة:
-- لا تكتب أي نص أو تعليق خارج صيغة JSON.
-- لا تكرر الاستعلامات السابقة أو الأحاديث التي تم استرجاعها.
-- إذا لم تكن هناك أحاديث معينة تقترحها، اجعل قائمة candidate_hadiths فارغة.
-- تأكد من صحة تنسيق JSON وقابليته للتحليل المباشر بواسطة json.loads.
+1. استخرج المفهوم الإسلامي الأساسي في السؤال.
+2. ارجع خطوة للخلف (Step Back) إلى المفهوم أو الباب الإسلامي الأشمل.
+   أمثلة:
+   - بر الوالدين ← الأخلاق ← حقوق الوالدين
+   - الغضب ← الأخلاق ← كظم الغيظ
+   - الرزق ← التوكل، القناعة، البركة، الصدقة
+   - الصلاة في السفر ← أحكام السفر ← الرخص
+3. أضف المفاهيم الإسلامية المرتبطة التي قد ترد في الأحاديث.
+4. استخدم مصطلحات شرعية وألفاظاً حديثية ومرادفات معروفة.
+5. إذا كان السؤال يعتمد على قصة أو حكم أو فضيلة، فابحث أيضاً بالمفهوم العام
+   وليس بالألفاظ الحرفية.
+6. لا تغيّر نية المستخدم أو موضوع السؤال.
+7. لا تكرر الاستعلامات السابقة إذا كانت متشابهة.
+
+يمكنك الاستفادة من:
+- أسماء الأبواب الفقهية.
+- أبواب العقيدة.
+- أبواب الآداب والأخلاق.
+- أسماء العبادات.
+- ألفاظ الأحاديث المشهورة.
+- المصطلحات الشرعية المرتبطة.
 
 الاستعلامات التي جُرّبت سابقاً:
 {tried_queries}
 
 الأحاديث التي سبق استرجاعها:
 {retrieval_history}
+
+أخرج استعلاماً واحداً فقط يصلح للبحث، بدون أي شرح.
 """,
         ),
         (
@@ -123,6 +130,34 @@ _REWRITE_PROMPT = ChatPromptTemplate.from_messages(
 الاستعلام الحالي:
 {current_query}
 """,
+        ),
+    ]
+)
+
+_HYDE_PROMPT = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            """
+أنت خبير في العلوم الإسلامية وحفظ الأحاديث النبوية.
+مهمتك هي اقتراح نصوص أو أجزاء من أحاديث نبوية (candidate_hadiths) تعتقد أنها تجيب عن سؤال المستخدم وتطابق سياقه.
+
+أخرج الناتج بصيغة JSON فقط كالتالي، كقائمة من النصوص:
+[
+  "نص أو جزء من الحديث المقترح الأول",
+  "نص أو جزء من الحديث المقترح الثاني"
+]
+
+قواعد هامة:
+- لا تكتب أي نص أو تعليق خارج صيغة JSON.
+- اقترح الأحاديث التي تشعر أنها مناسبة، لا يوجد حد معين للعدد، يمكنك اقتراح حديث واحد أو أكثر.
+- إذا لم تكن هناك أحاديث معينة تقترحها، اجعل القائمة فارغة [].
+- تأكد من صحة تنسيق JSON (يجب أن يكون مصفوفة نصوص).
+""",
+        ),
+        (
+            "human",
+            """السؤال: {question}""",
         ),
     ]
 )
@@ -155,34 +190,28 @@ def _parse_grade_response(response: str, num_docs: int) -> list[bool]:
     return results[:num_docs]
 
 
-def _parse_rewrite_response(response: str) -> tuple[str, list[str]]:
+def _parse_hyde_response(response: str) -> list[str]:
     """
-    Parse JSON response from the query rewriter LLM.
-    Returns (query, candidate_hadiths).
-    Falls back to treating the whole response as query if parsing fails.
+    Parse JSON response from the HyDE LLM.
+    Returns list of candidate hadiths.
     """
     import json
     import re
     cleaned = response.strip()
 
     # Strip markdown code block markers if present
-    match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", cleaned, re.DOTALL)
+    match = re.search(r"```(?:json)?\s*(\[.*?\])\s*```", cleaned, re.DOTALL)
     if match:
         cleaned = match.group(1)
 
     try:
-        data = json.loads(cleaned)
-        query = data.get("query", "").strip()
-        candidates = data.get("candidate_hadiths", [])
+        candidates = json.loads(cleaned)
         if not isinstance(candidates, list):
             candidates = []
-        candidates = [str(c).strip() for c in candidates if str(c).strip()]
-        return query, candidates
+        return [str(c).strip() for c in candidates if str(c).strip()]
     except Exception as e:
-        logger.warning("Failed to parse JSON rewrite response: %s. Using raw response as query.", e)
-        # Fallback: treat the entire clean response as the query
-        fallback_query = response.strip().strip('"').strip("'")
-        return fallback_query, []
+        logger.warning("Failed to parse JSON HyDE response: %s.", e)
+        return []
 
 
 # ── Node & graph builder ───────────────────────────────────────────────────────
@@ -232,9 +261,40 @@ def build_nodes(
     hadith_search_top_k : Number of hadiths to fetch per candidate.
     """
 
-    rag_chain = build_rag_chain(llm, system_role)
-    grade_chain = _GRADE_PROMPT | llm | StrOutputParser()
-    rewrite_chain = _REWRITE_PROMPT | llm | StrOutputParser()
+    from app.core.config import settings
+    from app.services.llm import build_llm
+
+    def get_node_llm(p: str, m: str):
+        return build_llm(
+            provider=p,
+            sbg_model_id=m if p == "sbg" else settings.sbg_model_id,
+            sbg_base_url=settings.sbg_base_url,
+            sbg_api_key=settings.sbg_api_key or "",
+            openai_model=m if p == "openai" else settings.openai_model,
+            groq_model=m if p == "groq" else settings.groq_model,
+            groq_api_key=settings.groq_api_key or "",
+            ollama_model=m if p == "ollama" else settings.ollama_model,
+            hf_model=m if p in ("huggingface", "huggingface_local") else settings.huggingface_model,
+            hf_token=settings.hf_token or "",
+            fanar_model=m if p == "fanar" else settings.fanar_model,
+            fanar_api_key=settings.fanar_api_key or "",
+            fanar_base_url=settings.fanar_base_url,
+            gemini_model=m if p == "gemini" else settings.gemini_model,
+            google_api_key=settings.google_api_key or "",
+            temperature=settings.llm_temperature,
+            max_tokens=settings.llm_max_tokens,
+        )
+
+    hyde_llm = get_node_llm("sbg", "qwen.qwen3-vl-235b-a22b").with_fallbacks([get_node_llm("gemini", "gemini-3.5-flash-lite")])
+    grade_llm = get_node_llm("sbg", "openai.gpt-oss-120b-1:0").with_fallbacks([get_node_llm("gemini", "gemini-3.5-flash-lite")])
+    rewrite_llm = get_node_llm("sbg", "qwen.qwen3-vl-235b-a22b").with_fallbacks([get_node_llm("gemini", "gemini-3.5-flash-lite")])
+    generate_llm = get_node_llm("sbg", "qwen.qwen3-vl-235b-a22b").with_fallbacks([get_node_llm("gemini", "gemini-3.5-flash-lite")])
+
+    rag_chain = build_rag_chain(generate_llm, system_role)
+    grade_chain = _GRADE_PROMPT | grade_llm | StrOutputParser()
+    rewrite_chain = _REWRITE_PROMPT | rewrite_llm | StrOutputParser()
+    hyde_chain = _HYDE_PROMPT | hyde_llm | StrOutputParser()
+
 
     # ── Node: retrieve ──────────────────────────────────────────────────────
 
@@ -248,46 +308,96 @@ def build_nodes(
             query[:80], loop, cur_k, cur_fetch_k,
         )
 
-        # Use category-filtered retrieval if category index is available
-        if qdrant_client and embedding_model_name:
-            docs = retrieve_with_category_filter(
-                query=query,
-                vectorstore=vectorstore,
-                bm25_index=bm25_index,
-                all_chunks=all_chunks,
-                parent_store=parent_store,
-                embedding_model=embedding_model,
-                qdrant_client=qdrant_client,
-                embedding_model_name=embedding_model_name,
-                category_collection_name=category_collection_name,
-                category_top_k=category_top_k,
-                k=cur_k,
-                fetch_k=cur_fetch_k,
-            )
-        else:
-            docs = retrieve(
-                query=query,
-                vectorstore=vectorstore,
-                bm25_index=bm25_index,
-                all_chunks=all_chunks,
-                parent_store=parent_store,
-                embedding_model=embedding_model,
-                k=cur_k,
-                fetch_k=cur_fetch_k,
-            )
+        import concurrent.futures
+
+        def _do_hybrid_search() -> list[RetrievedResult]:
+            # Use category-filtered retrieval if category index is available
+            if qdrant_client and embedding_model_name:
+                return retrieve_with_category_filter(
+                    query=query,
+                    vectorstore=vectorstore,
+                    bm25_index=bm25_index,
+                    all_chunks=all_chunks,
+                    parent_store=parent_store,
+                    embedding_model=embedding_model,
+                    qdrant_client=qdrant_client,
+                    embedding_model_name=embedding_model_name,
+                    category_collection_name=category_collection_name,
+                    category_top_k=category_top_k,
+                    k=cur_k,
+                    fetch_k=cur_fetch_k,
+                )
+            else:
+                return retrieve(
+                    query=query,
+                    vectorstore=vectorstore,
+                    bm25_index=bm25_index,
+                    all_chunks=all_chunks,
+                    parent_store=parent_store,
+                    embedding_model=embedding_model,
+                    k=cur_k,
+                    fetch_k=cur_fetch_k,
+                )
+
+        def _do_hyde_search() -> list[RetrievedResult]:
+            if hadith_bm25_index is None or hadith_records is None:
+                return []
+            try:
+                # LLM call for candidate hadiths
+                response: str = hyde_chain.invoke({"question": state["query"]})
+                logger.info("[Agent] HyDE raw response: %r", response[:200])
+                candidates = _parse_hyde_response(response)
+                logger.info("[Agent] Parsed HyDE — %d candidate hadiths", len(candidates))
+
+                if not candidates:
+                    return []
+
+                from app.services.hadith_search import lookup_candidate_hadiths
+                matched = lookup_candidate_hadiths(
+                    index=hadith_bm25_index,
+                    records=hadith_records,
+                    candidate_queries=candidates,
+                    k_per_query=hadith_search_top_k,
+                )
+                
+                tool_found = []
+                for rec in matched:
+                    tool_found.append(
+                        RetrievedResult(
+                            hadith=rec.hadith,
+                            sharh=rec.sharh,
+                            rawy=rec.rawy,
+                            source=rec.source,
+                            hokm=rec.hokm,
+                            page_id=rec.page_id,
+                            chunk_text="",
+                            similarity_score=1.0,
+                        )
+                    )
+                logger.info("[Agent] Hadith HyDE lookup fetched %d hadiths", len(tool_found))
+                return tool_found
+            except Exception as e:
+                logger.exception("Error in HyDE search thread: %s", e)
+                return []
+
+        # Run A1 (hybrid) and A2 (hyde) in parallel
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+            future_hybrid = executor.submit(_do_hybrid_search)
+            future_hyde = executor.submit(_do_hyde_search)
+            docs = future_hybrid.result()
+            hyde_docs = future_hyde.result()
 
         # Merge tool-found hadiths if present
-        tool_docs = state.get("tool_found_hadiths", [])
-        if tool_docs:
-            logger.info("[Agent] Merging %d tool-found hadiths into retrieved list", len(tool_docs))
+        if hyde_docs:
+            logger.info("[Agent] Merging %d HyDE-found hadiths into retrieved list", len(hyde_docs))
             seen = {d.hadith for d in docs}
             added = 0
-            for td in tool_docs:
+            for td in hyde_docs:
                 if td.hadith not in seen:
                     docs.append(td)
                     seen.add(td.hadith)
                     added += 1
-            logger.info("[Agent] Added %d unique tool-found hadiths to retrieved list", added)
+            logger.info("[Agent] Added %d unique HyDE-found hadiths to retrieved list", added)
 
         # Append hadith texts to retrieval history
         new_history = list(state["retrieval_history"])
@@ -303,7 +413,6 @@ def build_nodes(
             "documents": docs,
             "retrieval_history": new_history,
             "query_history": q_history,
-            "tool_found_hadiths": [],  # reset
         }
 
     # ── Node: grade_documents ───────────────────────────────────────────────
@@ -378,35 +487,8 @@ def build_nodes(
             "tried_queries": tried,
             "retrieval_history": history_str,
         })
-        logger.info("[Agent] REWRITE raw response: %r", response[:200])
-
-        new_query, candidates = _parse_rewrite_response(response)
-        logger.info("[Agent] Parsed REWRITE — query=%r, %d candidate hadiths", new_query[:80], len(candidates))
-
-        # Perform BM25 lookup on candidates
-        tool_found: list[RetrievedResult] = []
-        if hadith_bm25_index is not None and hadith_records is not None and candidates:
-            from app.services.hadith_search import lookup_candidate_hadiths
-            matched = lookup_candidate_hadiths(
-                index=hadith_bm25_index,
-                records=hadith_records,
-                candidate_queries=candidates,
-                k_per_query=hadith_search_top_k,
-            )
-            for rec in matched:
-                tool_found.append(
-                    RetrievedResult(
-                        hadith=rec.hadith,
-                        sharh=rec.sharh,
-                        rawy=rec.rawy,
-                        source=rec.source,
-                        hokm=rec.hokm,
-                        page_id=rec.page_id,
-                        chunk_text="",
-                        similarity_score=1.0,
-                    )
-                )
-            logger.info("[Agent] Hadith lookup fetched %d hadiths with full metadata", len(tool_found))
+        new_query = response.strip().strip('"').strip("'")
+        logger.info("[Agent] REWRITE — %r → %r", state["query"][:60], new_query[:80])
 
         # Apply decay for next iteration
         next_k = max(1, state["current_k"] - k_decay)
@@ -424,7 +506,6 @@ def build_nodes(
             "loop_count": state["loop_count"] + 1,
             "current_k": next_k,
             "current_fetch_k": next_fetch_k,
-            "tool_found_hadiths": tool_found,
         }
 
     # ── Node: generate (uses good_documents with full sharh) ────────────────
@@ -504,7 +585,6 @@ def run_agentic_rag(
         "answer": "",
         "current_k": k,
         "current_fetch_k": fetch_k,
-        "tool_found_hadiths": [],
     }
 
     final_state: AgentState = agent_graph.invoke(initial_state)

@@ -75,7 +75,8 @@ def _at(v, idx: int):
 
 def _dense_search(vectorstore, query: str, k: int) -> list[tuple[Document, float]]:
     try:
-        return vectorstore.similarity_search_with_score(query, k=k)
+        normalized_query = normalize_arabic(query)
+        return vectorstore.similarity_search_with_score(normalized_query, k=k)
     except Exception as exc:
         logger.warning("Dense search failed: %s", exc)
         return []
@@ -154,8 +155,11 @@ def _hadith_similarity(
 
     hadith_texts = [c[0] for c in candidates]
 
+    # Normalize query before generating its embedding
+    normalized_query = normalize_arabic(query)
+
     # Embed query + all hadiths in one batch
-    all_texts = [query] + hadith_texts
+    all_texts = [normalized_query] + hadith_texts
     embeddings = embedding_model.encode(
         all_texts,
         normalize_embeddings=True,

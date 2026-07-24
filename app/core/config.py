@@ -78,8 +78,8 @@ class Settings(BaseSettings):
     hf_token: str | None = None
     gemini_model: str = "gemini-3.5-flash-lite"
     google_api_key: str | None = None
-    llm_temperature: float = 0.1
-    llm_max_tokens: int = 3000
+    llm_temperature: float = 0.0
+    llm_max_tokens: int = 2000
 
     # ── Fanar ──────────────────────────────────────────────────────────────────
     fanar_model: str = "Fanar"
