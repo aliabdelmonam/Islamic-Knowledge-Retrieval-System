@@ -1,4 +1,4 @@
-"""POST /api/v1/ask — full RAG: retrieve + rerank + LLM generation (regular or agentic)."""
+"""POST /api/v1/ask — full RAG: retrieve + hadith similarity + LLM generation (regular or agentic)."""
 from __future__ import annotations
 
 import logging
@@ -26,7 +26,7 @@ def _to_retrieved_items(results) -> list[RetrievedItem]:
             source=r.source,
             hokm=r.hokm,
             page_id=r.page_id,
-            rerank_score=r.rerank_score,
+            similarity_score=r.similarity_score,
         )
         for r in results
     ]
@@ -37,7 +37,7 @@ async def ask_endpoint(body: AskRequest, request: Request) -> AskResponse:
     state = request.app.state
 
     # Guard: all components must be ready
-    for attr in ("vectorstore", "bm25_index", "all_chunks", "parent_store", "reranker", "rag_chain"):
+    for attr in ("vectorstore", "bm25_index", "all_chunks", "parent_store", "embedding_model", "rag_chain"):
         if getattr(state, attr, None) is None:
             raise PipelineNotReadyError(attr)
 
@@ -50,7 +50,6 @@ async def ask_endpoint(body: AskRequest, request: Request) -> AskResponse:
         if getattr(state, "agent_graph", None) is None:
             # Build on-the-fly if not pre-built at startup
             from app.services.agentic_rag import build_nodes
-            from app.services.llm import build_llm
 
             state.agent_graph = build_nodes(
                 llm=state.llm,
@@ -58,21 +57,31 @@ async def ask_endpoint(body: AskRequest, request: Request) -> AskResponse:
                 bm25_index=state.bm25_index,
                 all_chunks=state.all_chunks,
                 parent_store=state.parent_store,
-                reranker=state.reranker,
+                embedding_model=state.embedding_model,
                 qdrant_client=state.qdrant_client if getattr(state, "category_collection_ready", False) else None,
                 embedding_model_name=settings.embedding_model if getattr(state, "category_collection_ready", False) else "",
                 category_collection_name=settings.category_collection_name,
                 category_top_k=settings.category_top_k,
                 k=body.k,
                 fetch_k=settings.retriever_fetch_k,
+                k_decay=settings.k_decay,
+                fetch_k_decay=settings.fetch_k_decay,
                 system_role=settings.system_role,
+                hadith_bm25_index=getattr(state, "hadith_bm25_index", None),
+                hadith_records=getattr(state, "hadith_records", None),
+                hadith_search_top_k=settings.hadith_search_top_k,
             )
             logger.info("Agent graph built on-the-fly.")
 
         from app.services.agentic_rag import run_agentic_rag
 
         try:
-            result = run_agentic_rag(query=body.question, agent_graph=state.agent_graph)
+            result = run_agentic_rag(
+                query=body.question,
+                agent_graph=state.agent_graph,
+                k=body.k,
+                fetch_k=settings.retriever_fetch_k,
+            )
         except Exception as exc:
             logger.exception("Agentic RAG error: %s", exc)
             raise LLMError(str(exc))
@@ -89,7 +98,7 @@ async def ask_endpoint(body: AskRequest, request: Request) -> AskResponse:
             query_history=result["query_history"],
         )
 
-    # ── Regular RAG path (unchanged) ──────────────────────────────────────
+    # ── Regular RAG path ──────────────────────────────────────────────────
     question = body.question
     query_rewritten: str | None = None
 
@@ -109,7 +118,7 @@ async def ask_endpoint(body: AskRequest, request: Request) -> AskResponse:
             bm25_index=state.bm25_index,
             all_chunks=state.all_chunks,
             parent_store=state.parent_store,
-            reranker=state.reranker,
+            embedding_model=state.embedding_model,
             k=body.k,
         )
     except Exception as exc:

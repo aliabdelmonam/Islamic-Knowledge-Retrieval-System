@@ -17,7 +17,6 @@ from app.services.arabic_utils import normalize_arabic
 from app.services.bm25_index import load_bm25
 from app.services.embeddings import build_embeddings
 from app.services.llm import build_llm
-from app.services.reranker import get_reranker
 from app.services.retriever import retrieve, retrieve_with_category_filter
 from app.services.vector_store import get_qdrant_client, get_vectorstore
 from eval.config import eval_settings
@@ -69,8 +68,13 @@ def load_components():
     # BM25
     bm25_index = load_bm25(settings.models_dir / "bm25_index.pkl")
     
-    # Reranker
-    reranker = get_reranker(settings.reranker_model, settings.reranker_max_length)
+    # SentenceTransformer for hadith similarity
+    import torch
+    from sentence_transformers import SentenceTransformer
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    embedding_model = SentenceTransformer(settings.embedding_model, device=device)
+    if device == "cuda":
+        embedding_model.half()
     
     # LLM
     llm = build_llm(
@@ -101,7 +105,7 @@ def load_components():
         "parent_store": parent_store,
         "all_chunks": all_chunks,
         "bm25_index": bm25_index,
-        "reranker": reranker,
+        "embedding_model": embedding_model,
         "llm": llm
     }
 
@@ -139,7 +143,7 @@ def main():
                 bm25_index=comps["bm25_index"],
                 all_chunks=comps["all_chunks"],
                 parent_store=comps["parent_store"],
-                reranker=comps["reranker"],
+                embedding_model=comps["embedding_model"],
                 qdrant_client=comps["qdrant_client"],
                 embedding_model_name=settings.embedding_model,
                 category_collection_name=settings.category_collection_name,
@@ -154,7 +158,7 @@ def main():
                 bm25_index=comps["bm25_index"],
                 all_chunks=comps["all_chunks"],
                 parent_store=comps["parent_store"],
-                reranker=comps["reranker"],
+                embedding_model=comps["embedding_model"],
                 k=3,
                 fetch_k=8,
             )

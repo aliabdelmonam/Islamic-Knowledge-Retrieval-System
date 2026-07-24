@@ -19,7 +19,7 @@ async def retrieve_endpoint(body: RetrieveRequest, request: Request) -> Retrieve
     state = request.app.state
 
     # Guard: all retrieval components must be ready
-    for attr in ("vectorstore", "bm25_index", "all_chunks", "parent_store", "reranker"):
+    for attr in ("vectorstore", "bm25_index", "all_chunks", "parent_store", "embedding_model"):
         if getattr(state, attr, None) is None:
             raise PipelineNotReadyError(attr)
 
@@ -31,7 +31,7 @@ async def retrieve_endpoint(body: RetrieveRequest, request: Request) -> Retrieve
             bm25_index=state.bm25_index,
             all_chunks=state.all_chunks,
             parent_store=state.parent_store,
-            reranker=state.reranker,
+            embedding_model=state.embedding_model,
             k=body.k,
         )
     except Exception as exc:
@@ -46,7 +46,7 @@ async def retrieve_endpoint(body: RetrieveRequest, request: Request) -> Retrieve
             source=r.source,
             hokm=r.hokm,
             page_id=r.page_id,
-            rerank_score=r.rerank_score,
+            similarity_score=r.similarity_score,
         )
         for r in results
     ]

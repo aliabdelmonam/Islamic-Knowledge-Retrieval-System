@@ -71,9 +71,13 @@ def load_components():
     from app.services.bm25_index import load_bm25
     bm25_index = load_bm25(settings.models_dir / "bm25_index.pkl")
 
-    logger.info("Loading Reranker …")
-    from app.services.reranker import get_reranker
-    reranker = get_reranker(settings.reranker_model, settings.reranker_max_length)
+    logger.info("Loading SentenceTransformer for hadith similarity …")
+    import torch
+    from sentence_transformers import SentenceTransformer
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    embedding_model = SentenceTransformer(settings.embedding_model, device=device)
+    if device == "cuda":
+        embedding_model.half()
 
     return dict(
         embeddings=embeddings,
@@ -82,7 +86,7 @@ def load_components():
         bm25_index=bm25_index,
         all_chunks=all_chunks,
         parent_store=parent_store,
-        reranker=reranker,
+        embedding_model=embedding_model,
     )
 
 
@@ -127,7 +131,7 @@ def main():
             bm25_index=components["bm25_index"],
             all_chunks=components["all_chunks"],
             parent_store=components["parent_store"],
-            reranker=components["reranker"],
+            embedding_model=components["embedding_model"],
             qdrant_client=components["qdrant_client"],
             embedding_model_name=settings.embedding_model,
             category_collection_name=settings.category_collection_name,
@@ -139,7 +143,7 @@ def main():
         for j, r in enumerate(results[:3], 1):
             hadith_preview = r.hadith[:120] if r.hadith else "(no hadith)"
             print(f"    [{j}] {hadith_preview}…")
-            print(f"        Source: {r.source}  |  Rerank: {r.rerank_score:.4f}")
+            print(f"        Source: {r.source}  |  Similarity: {r.similarity_score:.4f}")
 
     print(f"\n{separator}")
     logger.info("=== Test complete ===")

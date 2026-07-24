@@ -13,7 +13,7 @@ class RetrievedItem(BaseModel):
     source: str
     hokm: str
     page_id: str = ""
-    rerank_score: Optional[float] = None
+    similarity_score: Optional[float] = None
 
 
 class AskResponse(BaseModel):

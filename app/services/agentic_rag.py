@@ -5,15 +5,17 @@ Flow:
     retrieve → grade_documents ──┬──→ generate  (if enough good docs OR max loops)
                                  └──→ rewrite_query → retrieve → ...
 
-Improvements over v1
----------------------
+Key features
+------------
+- **Hadith-level similarity**: retrieval uses embedding similarity on hadiths,
+  not sharh-level cross-encoder reranking.
 - **retrieval_history**: all hadiths retrieved across every loop are visible to the LLM.
 - **query_history**: rewritten queries are tracked so the LLM avoids repeating them.
 - **good_documents**: hadiths graded as relevant are accumulated across loops.
 - **Hadith-only grading**: the grader sees only hadith text (no sharh).
   Sharh is included only in the final generation step.
-- **Single LLM grading call**: the grade is stored in state and the edge reads it
-  — no duplicate LLM invocation.
+- **Single LLM grading call**: the grade is stored in state and the edge reads it.
+- **Decay**: fetch_k and k can decrease per iteration to narrow the search.
 """
 from __future__ import annotations
 
@@ -49,6 +51,9 @@ class AgentState(TypedDict):
     loop_count: int                             # Number of retrieval loops so far
     grade_decision: str                         # "relevant" | "not_relevant" — set by grade node
     answer: str                                 # Final generated answer
+    current_k: int                              # Current top-k (may decay per loop)
+    current_fetch_k: int                        # Current fetch_k (may decay per loop)
+    tool_found_hadiths: List[RetrievedResult]   # Hadiths looking up via BM25 on clean hadith
 
 
 # ── Grading prompt (hadith-only, no sharh) ─────────────────────────────────────
@@ -80,42 +85,33 @@ _REWRITE_PROMPT = ChatPromptTemplate.from_messages(
         (
             "system",
             """
-أنت خبير في العلوم الإسلامية وبناء استعلامات البحث.
+أنت خبير في العلوم الإسلامية وبنية استرجاع الأحاديث النبوية.
+مهمتك هي مساعدتنا في صياغة استعلام البحث واقتراح أحاديث نبوية قد تجيب على سؤال المستخدم.
 
-هدفك ليس إعادة صياغة السؤال فقط، بل إنشاء استعلام جديد يزيد احتمال العثور
-على الأحاديث المناسبة.
+يجب أن تقوم بأمرين:
+1. صياغة استعلام بحث جديد فريد ومناسب (query) لزيادة احتمالية العثور على الأحاديث المناسبة (مثل استخراج المفهوم الإسلامي الأشمل وعناوين الأبواب الفقهية أو العقائدية).
+2. اقتراح قائمة من نصوص أو أجزاء من أحاديث نبوية (candidate_hadiths) تعتقد أنها تجيب عن السؤال مباشرة، ليتم البحث عنها في قاعدة بيانات الأحاديث الكاملة وجلب نصوصها الدقيقة ومخرجاتها (الراوي، المصدر، الحكم).
 
-اتبع الخطوات التالية داخلياً:
+أخرج الناتج بصيغة JSON فقط كالتالي:
+{{
+  "query": "الاستعلام الجديد المقترح للبحث",
+  "candidate_hadiths": [
+    "نص أو جزء من الحديث المقترح الأول",
+    "نص أو جزء من الحديث المقترح الثاني"
+  ]
+}}
 
-1. استخرج المفهوم الإسلامي الأساسي في السؤال.
-2. ارجع خطوة للخلف (Step Back) إلى المفهوم أو الباب الإسلامي الأشمل.
-   أمثلة:
-   - بر الوالدين ← الأخلاق ← حقوق الوالدين
-   - الغضب ← الأخلاق ← كظم الغيظ
-   - الرزق ← التوكل، القناعة، البركة، الصدقة
-   - الصلاة في السفر ← أحكام السفر ← الرخص
-3. أضف المفاهيم الإسلامية المرتبطة التي قد ترد في الأحاديث.
-4. استخدم مصطلحات شرعية وألفاظاً حديثية ومرادفات معروفة.
-5. إذا كان السؤال يعتمد على قصة أو حكم أو فضيلة، فابحث أيضاً بالمفهوم العام
-   وليس بالألفاظ الحرفية.
-6. لا تغيّر نية المستخدم أو موضوع السؤال.
-7. لا تكرر الاستعلامات السابقة إذا كانت متشابهة.
-
-يمكنك الاستفادة من:
-- أسماء الأبواب الفقهية.
-- أبواب العقيدة.
-- أبواب الآداب والأخلاق.
-- أسماء العبادات.
-- ألفاظ الأحاديث المشهورة.
-- المصطلحات الشرعية المرتبطة.
+قواعد هامة:
+- لا تكتب أي نص أو تعليق خارج صيغة JSON.
+- لا تكرر الاستعلامات السابقة أو الأحاديث التي تم استرجاعها.
+- إذا لم تكن هناك أحاديث معينة تقترحها، اجعل قائمة candidate_hadiths فارغة.
+- تأكد من صحة تنسيق JSON وقابليته للتحليل المباشر بواسطة json.loads.
 
 الاستعلامات التي جُرّبت سابقاً:
 {tried_queries}
 
 الأحاديث التي سبق استرجاعها:
 {retrieval_history}
-
-أخرج استعلاماً واحداً فقط يصلح للبحث، بدون أي شرح.
 """,
         ),
         (
@@ -159,31 +155,81 @@ def _parse_grade_response(response: str, num_docs: int) -> list[bool]:
     return results[:num_docs]
 
 
+def _parse_rewrite_response(response: str) -> tuple[str, list[str]]:
+    """
+    Parse JSON response from the query rewriter LLM.
+    Returns (query, candidate_hadiths).
+    Falls back to treating the whole response as query if parsing fails.
+    """
+    import json
+    import re
+    cleaned = response.strip()
+
+    # Strip markdown code block markers if present
+    match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", cleaned, re.DOTALL)
+    if match:
+        cleaned = match.group(1)
+
+    try:
+        data = json.loads(cleaned)
+        query = data.get("query", "").strip()
+        candidates = data.get("candidate_hadiths", [])
+        if not isinstance(candidates, list):
+            candidates = []
+        candidates = [str(c).strip() for c in candidates if str(c).strip()]
+        return query, candidates
+    except Exception as e:
+        logger.warning("Failed to parse JSON rewrite response: %s. Using raw response as query.", e)
+        # Fallback: treat the entire clean response as the query
+        fallback_query = response.strip().strip('"').strip("'")
+        return fallback_query, []
+
+
 # ── Node & graph builder ───────────────────────────────────────────────────────
 
-def build_nodes(llm, vectorstore, bm25_index, all_chunks, parent_store, reranker,
-                qdrant_client=None, embedding_model_name: str = "",
-                category_collection_name: str = "hadith_categories",
-                category_top_k: int = 5,
-                k: int = 5, fetch_k: int = 25, system_role: str = ""):
+def build_nodes(
+    llm,
+    vectorstore,
+    bm25_index,
+    all_chunks,
+    parent_store,
+    embedding_model,
+    qdrant_client=None,
+    embedding_model_name: str = "",
+    category_collection_name: str = "hadith_categories",
+    category_top_k: int = 5,
+    k: int = 5,
+    fetch_k: int = 25,
+    k_decay: int = 0,
+    fetch_k_decay: int = 0,
+    system_role: str = "",
+    hadith_bm25_index=None,
+    hadith_records=None,
+    hadith_search_top_k: int = 3,
+):
     """
     Build and return the compiled LangGraph agent.
 
     Parameters
     ----------
-    llm          : LangChain BaseChatModel for grading, rewriting, and generation.
-    vectorstore  : Qdrant vector store.
-    bm25_index   : BM25Okapi index.
-    all_chunks   : List of all child Document chunks.
-    parent_store : List of parent Document objects.
-    reranker     : Cross-encoder reranker model.
-    qdrant_client: QdrantClient for category retrieval.
+    llm              : LangChain BaseChatModel for grading, rewriting, and generation.
+    vectorstore      : Qdrant vector store.
+    bm25_index       : BM25Okapi index.
+    all_chunks       : List of all child Document chunks.
+    parent_store     : List of parent Document objects.
+    embedding_model  : SentenceTransformer for hadith-level similarity.
+    qdrant_client    : QdrantClient for category retrieval.
     embedding_model_name : Model name for encoding category queries.
     category_collection_name : Qdrant collection for categories.
-    category_top_k : Number of categories to match per query.
-    k            : Number of final results to retrieve per loop.
-    fetch_k      : Broad fetch count for dense + BM25 search.
-    system_role  : System prompt for the final RAG generation chain.
+    category_top_k   : Number of categories to match per query.
+    k                : Number of final results to retrieve per loop.
+    fetch_k          : Broad fetch count for dense + BM25 search.
+    k_decay          : Reduce k by this amount each iteration (min 1).
+    fetch_k_decay    : Reduce fetch_k by this amount each iteration (min k).
+    system_role      : System prompt for the final RAG generation chain.
+    hadith_bm25_index : Pre-built BM25 index on clean hadiths.
+    hadith_records   : List of HadithRecord.
+    hadith_search_top_k : Number of hadiths to fetch per candidate.
     """
 
     rag_chain = build_rag_chain(llm, system_role)
@@ -195,7 +241,12 @@ def build_nodes(llm, vectorstore, bm25_index, all_chunks, parent_store, reranker
     def node_retrieve(state: AgentState) -> dict:
         query = state["query"]
         loop = state["loop_count"]
-        logger.info("[Agent] RETRIEVE — query=%r  loop=%d", query[:80], loop)
+        cur_k = state["current_k"]
+        cur_fetch_k = state["current_fetch_k"]
+        logger.info(
+            "[Agent] RETRIEVE — query=%r  loop=%d  k=%d  fetch_k=%d",
+            query[:80], loop, cur_k, cur_fetch_k,
+        )
 
         # Use category-filtered retrieval if category index is available
         if qdrant_client and embedding_model_name:
@@ -205,13 +256,13 @@ def build_nodes(llm, vectorstore, bm25_index, all_chunks, parent_store, reranker
                 bm25_index=bm25_index,
                 all_chunks=all_chunks,
                 parent_store=parent_store,
-                reranker=reranker,
+                embedding_model=embedding_model,
                 qdrant_client=qdrant_client,
                 embedding_model_name=embedding_model_name,
                 category_collection_name=category_collection_name,
                 category_top_k=category_top_k,
-                k=k,
-                fetch_k=fetch_k,
+                k=cur_k,
+                fetch_k=cur_fetch_k,
             )
         else:
             docs = retrieve(
@@ -220,10 +271,23 @@ def build_nodes(llm, vectorstore, bm25_index, all_chunks, parent_store, reranker
                 bm25_index=bm25_index,
                 all_chunks=all_chunks,
                 parent_store=parent_store,
-                reranker=reranker,
-                k=k,
-                fetch_k=fetch_k,
+                embedding_model=embedding_model,
+                k=cur_k,
+                fetch_k=cur_fetch_k,
             )
+
+        # Merge tool-found hadiths if present
+        tool_docs = state.get("tool_found_hadiths", [])
+        if tool_docs:
+            logger.info("[Agent] Merging %d tool-found hadiths into retrieved list", len(tool_docs))
+            seen = {d.hadith for d in docs}
+            added = 0
+            for td in tool_docs:
+                if td.hadith not in seen:
+                    docs.append(td)
+                    seen.add(td.hadith)
+                    added += 1
+            logger.info("[Agent] Added %d unique tool-found hadiths to retrieved list", added)
 
         # Append hadith texts to retrieval history
         new_history = list(state["retrieval_history"])
@@ -239,6 +303,7 @@ def build_nodes(llm, vectorstore, bm25_index, all_chunks, parent_store, reranker
             "documents": docs,
             "retrieval_history": new_history,
             "query_history": q_history,
+            "tool_found_hadiths": [],  # reset
         }
 
     # ── Node: grade_documents ───────────────────────────────────────────────
@@ -272,14 +337,15 @@ def build_nodes(llm, vectorstore, bm25_index, all_chunks, parent_store, reranker
                 newly_added += 1
 
         good_count = len(new_good)
+        cur_k = state["current_k"]
         logger.info(
             "[Agent] GRADE — %d/%d relevant this round, %d added, %d total good docs",
             sum(grades), len(docs), newly_added, good_count,
         )
 
         # Decide: enough good docs → relevant; else → not_relevant
-        decision = "relevant" if good_count >= k else "not_relevant"
-        logger.info("[Agent] GRADE decision=%s (need %d, have %d)", decision, k, good_count)
+        decision = "relevant" if good_count >= cur_k else "not_relevant"
+        logger.info("[Agent] GRADE decision=%s (need %d, have %d)", decision, cur_k, good_count)
 
         return {
             "good_documents": new_good,
@@ -306,36 +372,79 @@ def build_nodes(llm, vectorstore, bm25_index, all_chunks, parent_store, reranker
         history_sample = state["retrieval_history"][-10:]  # last 10 hadiths
         history_str = "\n".join(f"- {h[:100]}" for h in history_sample) or "—"
 
-        new_query: str = rewrite_chain.invoke({
+        response: str = rewrite_chain.invoke({
             "original_question": state["original_query"],
             "current_query": state["query"],
             "tried_queries": tried,
             "retrieval_history": history_str,
         })
-        new_query = new_query.strip().strip('"').strip("'")
-        logger.info("[Agent] REWRITE — %r → %r", state["query"][:60], new_query[:80])
+        logger.info("[Agent] REWRITE raw response: %r", response[:200])
+
+        new_query, candidates = _parse_rewrite_response(response)
+        logger.info("[Agent] Parsed REWRITE — query=%r, %d candidate hadiths", new_query[:80], len(candidates))
+
+        # Perform BM25 lookup on candidates
+        tool_found: list[RetrievedResult] = []
+        if hadith_bm25_index is not None and hadith_records is not None and candidates:
+            from app.services.hadith_search import lookup_candidate_hadiths
+            matched = lookup_candidate_hadiths(
+                index=hadith_bm25_index,
+                records=hadith_records,
+                candidate_queries=candidates,
+                k_per_query=hadith_search_top_k,
+            )
+            for rec in matched:
+                tool_found.append(
+                    RetrievedResult(
+                        hadith=rec.hadith,
+                        sharh=rec.sharh,
+                        rawy=rec.rawy,
+                        source=rec.source,
+                        hokm=rec.hokm,
+                        page_id=rec.page_id,
+                        chunk_text="",
+                        similarity_score=1.0,
+                    )
+                )
+            logger.info("[Agent] Hadith lookup fetched %d hadiths with full metadata", len(tool_found))
+
+        # Apply decay for next iteration
+        next_k = max(1, state["current_k"] - k_decay)
+        next_fetch_k = max(next_k, state["current_fetch_k"] - fetch_k_decay)
+
+        if k_decay or fetch_k_decay:
+            logger.info(
+                "[Agent] DECAY — k: %d→%d, fetch_k: %d→%d",
+                state["current_k"], next_k,
+                state["current_fetch_k"], next_fetch_k,
+            )
 
         return {
             "query": new_query,
             "loop_count": state["loop_count"] + 1,
+            "current_k": next_k,
+            "current_fetch_k": next_fetch_k,
+            "tool_found_hadiths": tool_found,
         }
 
     # ── Node: generate (uses good_documents with full sharh) ────────────────
 
     def node_generate(state: AgentState) -> dict:
         good_docs = state["good_documents"]
-        # Fall back to latest retrieved docs if no good docs accumulated
-        docs_for_generation = good_docs if good_docs else state["documents"]
+        # Restrict to refusing to answer if no good hadiths were accumulated
+        if not good_docs:
+            logger.info("[Agent] GENERATE — no good hadiths accumulated; refusing to answer")
+            return {"answer": "لم أجد أحاديث تتوافق مع سؤالك."}
+
         logger.info(
-            "[Agent] GENERATE — using %d docs (good=%d, fallback=%d)",
-            len(docs_for_generation), len(good_docs), len(state["documents"]),
+            "[Agent] GENERATE — using %d good docs",
+            len(good_docs),
         )
 
-        # format_docs includes sharh — exactly what we want for generation
         answer = ask(
             question=state["original_query"],
             chain=rag_chain,
-            results=docs_for_generation,
+            results=good_docs,
         )
         return {"answer": answer}
 
@@ -366,6 +475,8 @@ def build_nodes(llm, vectorstore, bm25_index, all_chunks, parent_store, reranker
 def run_agentic_rag(
     query: str,
     agent_graph,
+    k: int = 5,
+    fetch_k: int = 25,
 ) -> dict:
     """
     Invoke the compiled LangGraph agent and return a rich result dict.
@@ -373,13 +484,13 @@ def run_agentic_rag(
     Returns
     -------
     dict with keys:
-        original_query  – the user's original question
-        final_query     – the query used in the last retrieval round
-        answer          – the generated answer string
-        good_documents  – list of RetrievedResult graded as relevant
-        all_documents   – list of RetrievedResult from the last loop
-        loop_count      – how many retrieval loops were performed
-        query_history   – all queries tried
+         original_query  – the user's original question
+         final_query     – the query used in the last retrieval round
+         answer          – the generated answer string
+         good_documents  – list of RetrievedResult graded as relevant
+         all_documents   – list of RetrievedResult from the last loop
+         loop_count      – how many retrieval loops were performed
+         query_history   – all queries tried
     """
     initial_state: AgentState = {
         "query": query,
@@ -391,6 +502,9 @@ def run_agentic_rag(
         "loop_count": 0,
         "grade_decision": "",
         "answer": "",
+        "current_k": k,
+        "current_fetch_k": fetch_k,
+        "tool_found_hadiths": [],
     }
 
     final_state: AgentState = agent_graph.invoke(initial_state)

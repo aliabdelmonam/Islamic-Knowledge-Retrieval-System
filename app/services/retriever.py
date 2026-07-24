@@ -1,51 +1,72 @@
 """
-Hybrid retriever: dense (Qdrant) + BM25 + cross-encoder reranking.
+Hybrid retriever: dense (Qdrant) + BM25 → hadith-level embedding similarity.
+
+Flow
+----
+1. Dense search (Qdrant) on sharh index → fetch_k chunks
+2. BM25 search on sharh index → fetch_k chunks
+3. Merge candidates (deduplicate by chunk idx)
+4. Parent expansion (child chunks → parent sharh documents)
+5. Extract ALL hadiths from parent metadata (each parent may have N hadiths)
+6. Embed query + all hadiths → cosine similarity
+7. Return top-k RetrievedResult (correct hadith↔sharh pairing)
 """
 from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
+import numpy as np
 from langchain_core.documents import Document
 from rank_bm25 import BM25Okapi
 
 from app.services.arabic_utils import normalize_arabic
+
+if TYPE_CHECKING:
+    from sentence_transformers import SentenceTransformer
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class RetrievedResult:
-    """One retrieved + reranked candidate, ready for the prompt."""
+    """One retrieved candidate, ready for the prompt."""
     hadith: str
     sharh: str
     rawy: str
     source: str
     hokm: str
     page_id: str = ""
-    chunk_text: str = ""
-    rerank_score: float = 0.0
-    dense_score: float = 0.0
-    bm25_score: float = 0.0
+    chunk_text: str = ""          # sharh chunk text
+    similarity_score: float = 0.0  # hadith ↔ query cosine similarity
 
     @classmethod
-    def from_chunk(cls, chunk: Document, rerank_score: float = 0.0) -> "RetrievedResult":
-        meta = chunk.metadata
+    def from_parent(
+        cls,
+        parent: Document,
+        hadith_idx: int,
+        similarity_score: float = 0.0,
+    ) -> "RetrievedResult":
+        """Build a result from a parent doc, selecting a specific hadith by index."""
+        meta = parent.metadata
         return cls(
-            hadith=_first(meta.get("hadith", [""])),
-            sharh=_first(meta.get("sharh", [""])),
-            rawy=_first(meta.get("rawy", [""])),
-            source=_first(meta.get("source", [""])),
-            hokm=_first(meta.get("hokm", [""])),
-            page_id=str(_first(meta.get("page_id", [""]))),
-            chunk_text=chunk.page_content,
-            rerank_score=rerank_score,
+            hadith=_at(meta.get("hadith", [""]), hadith_idx),
+            sharh=_at(meta.get("sharh", [""]), hadith_idx),
+            rawy=_at(meta.get("rawy", [""]), hadith_idx),
+            source=_at(meta.get("source", [""]), hadith_idx),
+            hokm=_at(meta.get("hokm", [""]), hadith_idx),
+            page_id=str(_at(meta.get("page_id", [""]), hadith_idx)),
+            chunk_text=parent.page_content,
+            similarity_score=similarity_score,
         )
 
 
-def _first(v):
-    """Return first element if list, else value itself."""
+def _at(v, idx: int):
+    """Return element at *idx* if list, else value itself."""
     if isinstance(v, list):
+        if idx < len(v):
+            return v[idx]
         return v[0] if v else ""
     return v
 
@@ -100,21 +121,79 @@ def _expand_to_parent(
     return parents
 
 
-# ── Rerank ─────────────────────────────────────────────────────────────────────
+# ── Hadith-level embedding similarity ─────────────────────────────────────────
 
-def _rerank(
-    reranker,
+def _hadith_similarity(
+    embedding_model: SentenceTransformer,
     query: str,
-    candidates: list[Document],
+    parents: list[Document],
     top_k: int,
-    batch_size: int = 128,
-) -> list[tuple[Document, float]]:
-    from app.services.reranker import rerank
+) -> list[RetrievedResult]:
+    """
+    Extract all hadiths from parent docs, embed them + query,
+    rank by cosine similarity, return top-k RetrievedResult.
+    """
+    # Collect all (hadith_text, parent_doc, hadith_index) tuples
+    candidates: list[tuple[str, Document, int]] = []
+    for parent in parents:
+        hadiths = parent.metadata.get("hadith", [])
+        if isinstance(hadiths, list):
+            for i, h in enumerate(hadiths):
+                h_text = str(h).strip()
+                if h_text:
+                    candidates.append((h_text, parent, i))
+        else:
+            # Single hadith (not a list)
+            h_text = str(hadiths).strip()
+            if h_text:
+                candidates.append((h_text, parent, 0))
 
-    passages = [c.page_content for c in candidates]
-    scores = rerank(reranker, query, passages, batch_size=batch_size)
-    paired = sorted(zip(candidates, scores), key=lambda x: x[1], reverse=True)
-    return paired[:top_k]
+    if not candidates:
+        logger.warning("No hadiths found in %d parent documents", len(parents))
+        return []
+
+    hadith_texts = [c[0] for c in candidates]
+
+    # Embed query + all hadiths in one batch
+    all_texts = [query] + hadith_texts
+    embeddings = embedding_model.encode(
+        all_texts,
+        normalize_embeddings=True,
+        convert_to_numpy=True,
+        show_progress_bar=False,
+    )
+    query_emb = embeddings[0]  # shape: (dim,)
+    hadith_embs = embeddings[1:]  # shape: (N, dim)
+
+    # Cosine similarity (embeddings are already normalized)
+    scores = np.dot(hadith_embs, query_emb)
+
+    # Sort by score descending
+    ranked_indices = np.argsort(scores)[::-1]
+
+    # Deduplicate by hadith text and take top_k
+    seen_hadiths: set[str] = set()
+    results: list[RetrievedResult] = []
+    for idx in ranked_indices:
+        hadith_text, parent_doc, hadith_idx = candidates[idx]
+        if hadith_text in seen_hadiths:
+            continue
+        seen_hadiths.add(hadith_text)
+        results.append(
+            RetrievedResult.from_parent(
+                parent=parent_doc,
+                hadith_idx=hadith_idx,
+                similarity_score=float(scores[idx]),
+            )
+        )
+        if len(results) >= top_k:
+            break
+
+    logger.info(
+        "Hadith similarity: %d candidates → %d unique results (top-%d)",
+        len(candidates), len(results), top_k,
+    )
+    return results
 
 
 # ── Main retrieve ──────────────────────────────────────────────────────────────
@@ -125,25 +204,23 @@ def retrieve(
     bm25_index: BM25Okapi,
     all_chunks: list[Document],
     parent_store: list[Document],
-    reranker,
+    embedding_model: SentenceTransformer,
     k: int = 5,
     fetch_k: int = 25,
-    reranker_batch_size: int = 128,
 ) -> list[RetrievedResult]:
     """
     Full hybrid retrieve pipeline:
-    1. Dense search (Qdrant)
-    2. BM25 search
-    3. Merge candidates
+    1. Dense search (Qdrant) on sharh
+    2. BM25 search on sharh
+    3. Merge candidates (deduplicate)
     4. Parent expansion
-    5. Cross-encoder rerank
-    6. Return top-k RetrievedResult objects
+    5. Hadith-level embedding similarity → top-k
     """
     # 1 & 2: search
     dense_results = _dense_search(vectorstore, query, fetch_k)
     bm25_results = _bm25_search_docs(bm25_index, all_chunks, query, fetch_k)
 
-    # 3: merge (dense takes priority; add BM25 extras)
+    # 3: merge (deduplicate by chunk idx)
     seen_ids: set[int] = set()
     merged: list[Document] = []
 
@@ -166,14 +243,8 @@ def retrieve(
     # 4: expand to parents
     expanded = _expand_to_parent(merged, parent_store)
 
-    # 5: rerank
-    reranked = _rerank(reranker, query, expanded, top_k=k, batch_size=reranker_batch_size)
-
-    # 6: build results
-    results: list[RetrievedResult] = []
-    for doc, score in reranked:
-        r = RetrievedResult.from_chunk(doc, rerank_score=score)
-        results.append(r)
+    # 5: hadith-level embedding similarity
+    results = _hadith_similarity(embedding_model, query, expanded, top_k=k)
 
     logger.info("Retrieved %d results for query: %r", len(results), query[:60])
     return results
@@ -236,20 +307,19 @@ def retrieve_with_category_filter(
     bm25_index: BM25Okapi,
     all_chunks: list[Document],
     parent_store: list[Document],
-    reranker,
+    embedding_model: SentenceTransformer,
     qdrant_client,
     embedding_model_name: str,
     category_collection_name: str = "hadith_categories",
     category_top_k: int = 5,
     k: int = 5,
     fetch_k: int = 25,
-    reranker_batch_size: int = 128,
 ) -> list[RetrievedResult]:
     """
     Multi-stage retrieval:
     1. Retrieve top category_top_k categories via semantic search.
     2. Filter dense and BM25 searches to matching categories.
-    3. Merge → parent expansion → rerank → return top-k.
+    3. Merge → parent expansion → hadith embedding similarity → top-k.
     """
     from app.services.category_retriever import retrieve_categories
 
@@ -266,8 +336,8 @@ def retrieve_with_category_filter(
     if not category_names:
         logger.warning("No categories matched — falling back to unfiltered retrieval")
         return retrieve(
-            query, vectorstore, bm25_index, all_chunks, parent_store, reranker,
-            k=k, fetch_k=fetch_k, reranker_batch_size=reranker_batch_size,
+            query, vectorstore, bm25_index, all_chunks, parent_store,
+            embedding_model, k=k, fetch_k=fetch_k,
         )
 
     logger.info("Stage 1 categories: %s", category_names)
@@ -297,21 +367,15 @@ def retrieve_with_category_filter(
     if not merged:
         logger.warning("No candidates after category filter — falling back to unfiltered")
         return retrieve(
-            query, vectorstore, bm25_index, all_chunks, parent_store, reranker,
-            k=k, fetch_k=fetch_k, reranker_batch_size=reranker_batch_size,
+            query, vectorstore, bm25_index, all_chunks, parent_store,
+            embedding_model, k=k, fetch_k=fetch_k,
         )
 
     # Parent expansion
     expanded = _expand_to_parent(merged, parent_store)
 
-    # Rerank
-    reranked = _rerank(reranker, query, expanded, top_k=k, batch_size=reranker_batch_size)
-
-    # Build results
-    results: list[RetrievedResult] = []
-    for doc, score in reranked:
-        r = RetrievedResult.from_chunk(doc, rerank_score=score)
-        results.append(r)
+    # Hadith-level embedding similarity
+    results = _hadith_similarity(embedding_model, query, expanded, top_k=k)
 
     logger.info(
         "Retrieved %d results (category-filtered) for query: %r",
