@@ -23,11 +23,20 @@ services:
     environment:
       - QDRANT_HOST=qdrant
       - QDRANT_PORT=6333
+      - REDIS_URL=redis://redis:6379/0
     volumes:
-      - ./models:/app/models     # persist BM25 + parent store
-      - ./data:/app/data         # CSV data
+      - ./models:/app/models # persist BM25 + parent store
+      - ./data:/app/data # CSV data
     depends_on:
       - qdrant
+      - redis
+    restart: unless-stopped
+
+  redis:
+    image: redis:alpine
+    container_name: hadith_redis
+    ports:
+      - "6379:6379"
     restart: unless-stopped
 
 volumes:

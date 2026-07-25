@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import uuid
 
 from fastapi import APIRouter, Request
 
@@ -45,6 +46,8 @@ async def ask_endpoint(body: AskRequest, request: Request) -> AskResponse:
     #   per-request flag > server config default
     use_agentic = body.use_agentic if body.use_agentic is not None else settings.use_agentic_rag
 
+    session_id = body.session_id or str(uuid.uuid4())
+
     # ── Agentic RAG path ──────────────────────────────────────────────────
     if use_agentic:
         if getattr(state, "agent_graph", None) is None:
@@ -78,6 +81,7 @@ async def ask_endpoint(body: AskRequest, request: Request) -> AskResponse:
         try:
             result = run_agentic_rag(
                 query=body.question,
+                session_id=session_id,
                 agent_graph=state.agent_graph,
                 k=body.k,
                 fetch_k=settings.retriever_fetch_k,
@@ -96,6 +100,7 @@ async def ask_endpoint(body: AskRequest, request: Request) -> AskResponse:
             agentic=True,
             loop_count=result["loop_count"],
             query_history=result["query_history"],
+            session_id=session_id,
         )
 
     # ── Regular RAG path ──────────────────────────────────────────────────
@@ -141,4 +146,5 @@ async def ask_endpoint(body: AskRequest, request: Request) -> AskResponse:
         sources=_to_retrieved_items(results),
         query_rewritten=query_rewritten,
         agentic=False,
+        session_id=session_id,
     )

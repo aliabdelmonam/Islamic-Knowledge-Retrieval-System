@@ -24,6 +24,7 @@ class AskResponse(BaseModel):
     agentic: bool = False
     loop_count: Optional[int] = None
     query_history: Optional[list[str]] = None
+    session_id: Optional[str] = None
 
 
 class RetrieveResponse(BaseModel):

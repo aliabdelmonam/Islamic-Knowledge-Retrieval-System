@@ -309,15 +309,26 @@ document.addEventListener("DOMContentLoaded", () => {
                 removeLoadingBubble(loaderId);
                 renderRetrieveResponse(data, text, useRetrieveMode);
             } else {
+                // Fetch session_id from localStorage if exists
+                let sessionId = localStorage.getItem("noor-session-id");
+                let body = { question: text, k: 5, rewrite: true };
+                if (sessionId) {
+                    body.session_id = sessionId;
+                }
+
                 // Call /ask endpoint
                 const res = await fetch(`${API_BASE_URL}/ask`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ question: text, k: 5, rewrite: true })
+                    body: JSON.stringify(body)
                 });
 
                 if (!res.ok) throw new Error("HTTP error " + res.status);
                 const data = await res.json();
+
+                if (data.session_id) {
+                    localStorage.setItem("noor-session-id", data.session_id);
+                }
 
                 removeLoadingBubble(loaderId);
                 renderAskResponse(data, text, useRetrieveMode);

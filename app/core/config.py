@@ -118,6 +118,10 @@ class Settings(BaseSettings):
     langsmith_api_key: str | None = None
     langsmith_project: str | None = None
 
+    # ── History ────────────────────────────────────────────────────────────────
+    redis_url: str = "redis://localhost:6379/0"
+    history_window_size: int = 4
+
     model_config = {
         "env_file": ".env",
         "env_file_encoding": "utf-8",
