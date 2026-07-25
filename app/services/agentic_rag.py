@@ -356,11 +356,11 @@ def build_nodes(
             max_tokens=settings.llm_max_tokens,
         )
 
-    hyde_llm = get_node_llm("sbg", "qwen.qwen3-vl-235b-a22b").with_fallbacks([get_node_llm("gemini", "gemini-3.5-flash-lite")])
+    hyde_llm = get_node_llm("gemini", "gemini-3.5-flash-lite").with_fallbacks([get_node_llm("sbg", "qwen.qwen3-vl-235b-a22b")])
     grade_llm = get_node_llm("sbg", "openai.gpt-oss-120b-1:0").with_fallbacks([get_node_llm("gemini", "gemini-3.5-flash-lite")])
-    rewrite_llm = get_node_llm("sbg", "qwen.qwen3-vl-235b-a22b").with_fallbacks([get_node_llm("gemini", "gemini-3.5-flash-lite")])
-    generate_llm = get_node_llm("sbg", "qwen.qwen3-vl-235b-a22b").with_fallbacks([get_node_llm("gemini", "gemini-3.5-flash")])
-    router_llm = get_node_llm("sbg", "openai.gpt-oss-20b-1:0").with_fallbacks([get_node_llm("gemini", "gemini-3.5-flash-lite")])
+    rewrite_llm = get_node_llm("gemini", "gemini-3.5-flash-lite").with_fallbacks([get_node_llm("sbg", "qwen.qwen3-vl-235b-a22b")])
+    generate_llm = get_node_llm("gemini", "gemini-3.5-flash-lite").with_fallbacks([get_node_llm("sbg", "qwen.qwen3-vl-235b-a22b")])
+    router_llm = get_node_llm("gemini", "gemini-3.5-flash-lite").with_fallbacks([get_node_llm("sbg", "qwen.qwen3-vl-235b-a22b")])
 
     rag_chain = build_rag_chain(generate_llm, system_role)
     grade_chain = _GRADE_PROMPT | grade_llm | StrOutputParser()

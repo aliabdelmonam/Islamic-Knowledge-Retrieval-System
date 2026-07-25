@@ -5,6 +5,13 @@
 const API_BASE_URL = "http://localhost:8000/api/v1";
 
 document.addEventListener("DOMContentLoaded", () => {
+    // If the user reloaded the page, clear the session storage
+    const navEntry = performance.getEntriesByType('navigation')[0];
+    if (navEntry && navEntry.type === 'reload') {
+        sessionStorage.removeItem('noor-session-id');
+        console.log('Session ID cleared on reload.');
+    }
+
     // DOM Elements
     const chatForm = document.getElementById("chatForm");
     const chatInput = document.getElementById("chatInput");
@@ -309,8 +316,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 removeLoadingBubble(loaderId);
                 renderRetrieveResponse(data, text, useRetrieveMode);
             } else {
-                // Fetch session_id from localStorage if exists
-                let sessionId = localStorage.getItem("noor-session-id");
+                // Fetch session_id from sessionStorage if exists
+                let sessionId = sessionStorage.getItem("noor-session-id");
                 let body = { question: text, k: 5, rewrite: true };
                 if (sessionId) {
                     body.session_id = sessionId;
@@ -327,7 +334,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const data = await res.json();
 
                 if (data.session_id) {
-                    localStorage.setItem("noor-session-id", data.session_id);
+                    sessionStorage.setItem("noor-session-id", data.session_id);
                 }
 
                 removeLoadingBubble(loaderId);
@@ -415,6 +422,14 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
     }
 
+    const DUMMY_MESSAGES = [
+        "جاري إرسال الطلب...",
+        "جاري البحث عن أحاديث...",
+        "جاري الكشف عن جودة الأحاديث...",
+        "جاري صياغة الإجابة...",
+        "يرجى الانتظار قليلاً..."
+    ];
+
     // Loading indicator renderer
     function appendLoadingBubble() {
         const id = "loader_" + Date.now();
@@ -430,20 +445,38 @@ document.addEventListener("DOMContentLoaded", () => {
                 </svg>
             </div>
             <div class="text-wrapper">
-                <div class="chat-loading">
+                <div class="chat-loading" style="display: inline-block;">
                     <div class="dot"></div>
                     <div class="dot"></div>
                     <div class="dot"></div>
                 </div>
+                <div class="loading-text" style="font-size: 13px; color: #888; margin-top: 8px;">جاري إرسال الطلب...</div>
             </div>
         `;
         messageStream.appendChild(bubble);
+
+        let msgIdx = 1;
+        const textEl = bubble.querySelector(".loading-text");
+        const intervalId = setInterval(() => {
+            if (textEl) {
+                textEl.textContent = DUMMY_MESSAGES[msgIdx % DUMMY_MESSAGES.length];
+                msgIdx++;
+            }
+        }, 5000); // Change text every 5 seconds
+
+        bubble.dataset.intervalId = intervalId;
+
         return id;
     }
 
     function removeLoadingBubble(id) {
         const loader = document.getElementById(id);
-        if (loader) loader.remove();
+        if (loader) {
+            if (loader.dataset.intervalId) {
+                clearInterval(loader.dataset.intervalId);
+            }
+            loader.remove();
+        }
     }
 
     // Renders the structured RAG output details
