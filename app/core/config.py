@@ -79,7 +79,7 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-3.5-flash-lite"
     google_api_key: str | None = None
     llm_temperature: float = 0.0
-    llm_max_tokens: int = 2000
+    llm_max_tokens: int = 3000
 
     # ── Fanar ──────────────────────────────────────────────────────────────────
     fanar_model: str = "Fanar"
@@ -120,7 +120,7 @@ class Settings(BaseSettings):
 
     # ── History ────────────────────────────────────────────────────────────────
     redis_url: str = "redis://localhost:6379/0"
-    history_window_size: int = 4
+    history_window_size: int = 3
 
     model_config = {
         "env_file": ".env",
