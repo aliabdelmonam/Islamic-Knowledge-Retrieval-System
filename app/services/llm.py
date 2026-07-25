@@ -1,6 +1,6 @@
 """
 LLM provider factory + custom ChatSBG implementation.
-Supports: sbg, openai, groq, ollama, huggingface, huggingface_local, fanar
+Supports: sbg, openai, groq, ollama, huggingface, huggingface_local, fanar, gemini
 """
 from __future__ import annotations
 
@@ -119,8 +119,10 @@ def build_llm(
     fanar_model: str = "Fanar-C-2-27B",
     fanar_api_key: str = "",
     fanar_base_url: str = "https://api.fanar.qa/v1",
+    gemini_model: str = "gemini-1.5-flash",
+    google_api_key: str = "",
     temperature: float = 0.1,
-    max_tokens: int = 512,
+    max_tokens: int = 5000,
 ):
     """Return a configured LangChain BaseChatModel for the given provider."""
     logger.info("Building LLM: provider=%s", provider)
@@ -170,6 +172,15 @@ def build_llm(
             base_url=fanar_base_url,
             temperature=temperature,
             max_tokens=max_tokens,
+        )
+
+    if provider == "gemini":
+        from langchain_google_genai import ChatGoogleGenerativeAI
+        return ChatGoogleGenerativeAI(
+            model=gemini_model,
+            google_api_key=google_api_key or None,
+            temperature=temperature,
+            max_output_tokens=max_tokens,
         )
 
     raise ValueError(f"Unknown LLM provider: {provider!r}")

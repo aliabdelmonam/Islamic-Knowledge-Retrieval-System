@@ -16,7 +16,7 @@ async def health(request: Request) -> HealthResponse:
         "embeddings": getattr(state, "embeddings", None) is not None,
         "vectorstore": getattr(state, "vectorstore", None) is not None,
         "bm25_index": getattr(state, "bm25_index", None) is not None,
-        "reranker": getattr(state, "reranker", None) is not None,
+        "embedding_model": getattr(state, "embedding_model", None) is not None,
         "llm": getattr(state, "llm", None) is not None,
         "rag_chain": getattr(state, "rag_chain", None) is not None,
     }

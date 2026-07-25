@@ -42,16 +42,19 @@ logger = logging.getLogger("test_agentic")
 
 # ── Test queries ───────────────────────────────────────────────────────────────
 TEST_QUERIES = [
-    # "ما هي العبادة",
-    # "بكم يجوز أن يتصدق الأنسان من ماله قبل موته؟",
-    # "ينفع اقعد مع بنت الجيران لوحدنا ؟"
-    "اعمل اية لو الدبانة وقعت في كوباية شاي؟"
+    # "شرح حديث : إذا نَصَحَ العَبدُ سَيِّدَه، وأحسَنَ عِبادةَ رَبِّه، كان له أجرُه مَرَّتَينِ."
+    # "اعمل اية لو الدبانة وقعت في كوباية شاي؟",
+    # "فهل العمل الصالح وحده يضمن دخول الجنة وفقا للتعاليم الإسلامية؟",
+    # "ما هو موقف الإسلام من ممارسة الوشم للنساء؟",
+    # "ما هي أركان الإسلام الأساسية التي يجب على كل مسلم أن يلتزم بها؟",
+    # "كيف تؤثر النية على ثواب العمل في الإسلام؟",
+    # "ما أهمية عبارة 'حسبنا الله ونعم الوكيل' في العقيدة الإسلامية؟"
+    "اعمل اية لو حد عطس قدامي ؟ و تف عليا ؟"
 ]
 
 
 def load_components():
     """Load all required ML components using app.core.config.settings."""
-    print(f"fanar api key is : {settings.fanar_api_key}")
     logger.info("Loading embeddings [%s] …", settings.embedding_model)
     from app.services.embeddings import build_embeddings
     embeddings = build_embeddings(
@@ -86,9 +89,17 @@ def load_components():
     from app.services.bm25_index import load_bm25
     bm25_index = load_bm25(settings.models_dir / "bm25_index.pkl")
 
-    logger.info("Loading Reranker [%s] …", settings.reranker_model)
-    from app.services.reranker import get_reranker
-    reranker = get_reranker(settings.reranker_model, settings.reranker_max_length)
+    logger.info("Loading hadith BM25 index …")
+    from app.services.hadith_search import load_hadith_index
+    hadith_bm25_index, hadith_records = load_hadith_index(settings.models_dir / "hadith_bm25_index.pkl")
+
+    logger.info("Loading SentenceTransformer [%s] for hadith similarity …", settings.embedding_model)
+    import torch
+    from sentence_transformers import SentenceTransformer
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    embedding_model = SentenceTransformer(settings.embedding_model, device=device)
+    if device == "cuda":
+        embedding_model.half()
 
     logger.info("Building LLM [provider=%s] …", settings.llm_provider)
     from app.services.llm import build_llm
@@ -106,6 +117,8 @@ def load_components():
         fanar_model=settings.fanar_model,
         fanar_api_key=settings.fanar_api_key or "",
         fanar_base_url=settings.fanar_base_url,
+        gemini_model=settings.gemini_model,
+        google_api_key=settings.google_api_key or "",
         temperature=settings.llm_temperature,
         max_tokens=settings.llm_max_tokens,
     )
@@ -116,28 +129,20 @@ def load_components():
         bm25_index=bm25_index,
         all_chunks=all_chunks,
         parent_store=parent_store,
-        reranker=reranker,
+        embedding_model=embedding_model,
         qdrant_client=client,
+        hadith_bm25_index=hadith_bm25_index,
+        hadith_records=hadith_records,
     )
 
 
 def main():
     logger.info("=== Agentic RAG — Manual Test Run ===")
     logger.info(
-        "Provider: %s | Embedding: %s | Reranker: %s",
+        "Provider: %s | Embedding: %s",
         settings.llm_provider,
         settings.embedding_model,
-        settings.reranker_model,
     )
-
-    ls_key = os.getenv("LANGCHAIN_API_KEY")
-    if not ls_key:
-        logger.warning(
-            "LANGCHAIN_API_KEY not set — LangSmith tracing will be disabled. "
-            "Add LANGCHAIN_API_KEY to your .env to enable cloud tracing."
-        )
-    else:
-        logger.info("LangSmith tracing enabled → project: %s", os.getenv("LANGCHAIN_PROJECT"))
 
     components = load_components()
 
@@ -150,14 +155,19 @@ def main():
         bm25_index=components["bm25_index"],
         all_chunks=components["all_chunks"],
         parent_store=components["parent_store"],
-        reranker=components["reranker"],
+        embedding_model=components["embedding_model"],
         qdrant_client=components["qdrant_client"],
         embedding_model_name=settings.embedding_model,
         category_collection_name=settings.category_collection_name,
         category_top_k=settings.category_top_k,
         k=settings.retriever_k,
         fetch_k=settings.retriever_fetch_k,
+        k_decay=settings.k_decay,
+        fetch_k_decay=settings.fetch_k_decay,
         system_role=settings.system_role,
+        hadith_bm25_index=components["hadith_bm25_index"],
+        hadith_records=components["hadith_records"],
+        hadith_search_top_k=settings.hadith_search_top_k,
     )
     logger.info("Graph compiled successfully.")
 
@@ -168,7 +178,12 @@ def main():
         print(f"[Query {i}/{len(TEST_QUERIES)}] {query}")
         print(separator)
 
-        result = run_agentic_rag(query=query, agent_graph=agent_graph)
+        result = run_agentic_rag(
+            query=query,
+            agent_graph=agent_graph,
+            k=settings.retriever_k,
+            fetch_k=settings.retriever_fetch_k,
+        )
 
         print(f"  Loops performed : {result['loop_count']}")
         print(f"  Final query     : {result['final_query']}")
@@ -184,7 +199,7 @@ def main():
             print("── Top good hadiths ──")
             for j, doc in enumerate(result["good_documents"][:3], 1):
                 print(f"  [{j}] {doc.hadith[:120]}…")
-                print(f"      Rawy: {doc.rawy}  |  Source: {doc.source}  |  Rerank: {doc.rerank_score:.4f}")
+                print(f"      Rawy: {doc.rawy}  |  Source: {doc.source}  |  Similarity: {doc.similarity_score:.4f}")
 
     print(f"\n{separator}")
     logger.info("=== Test run complete ===")

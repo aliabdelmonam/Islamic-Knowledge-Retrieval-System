@@ -15,7 +15,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     # ── Paths ──────────────────────────────────────────────────────────────────
     project_root: Path = Path(__file__).resolve().parents[2]
-    data_csv: Path = Path("data/semantic_clustered_hadiths_per_sharh.csv")
+    data_csv: Path = Path("data/Hadith_Filtered_Books.csv")
     models_dir: Path = Path("models")  # bm25_index.pkl, parent_store.pkl
     chroma_dir: Path = Path("chroma_db")  # kept for reference / migration
     collection_name: str = "hadith_rag"
@@ -61,16 +61,12 @@ class Settings(BaseSettings):
     category_collection_name: str = "hadith_categories"
     category_top_k: int = 5              # categories to match per query
 
-    # ── Reranker ───────────────────────────────────────────────────────────────
-    reranker_model: str = "Omartificial-Intelligence-Space/ARA-Reranker-V1"
-    reranker_max_length: int = 512
-    reranker_batch_size: int = 128
 
     # ── LLM ────────────────────────────────────────────────────────────────────
     llm_provider: Literal[
-        "openai", "ollama", "groq", "huggingface", "huggingface_local", "fanar", "sbg"
+        "openai", "ollama", "groq", "huggingface", "huggingface_local", "fanar", "sbg", "gemini"
     ] = "sbg"
-    sbg_model_id: str = "openai.gpt-oss-120b-1:0"
+    sbg_model_id: str = "qwen.qwen3-vl-235b-a22b"
     sbg_base_url: str = "http://apiaccess.iti.net.eg/api/v1"
     sbg_api_key: str | None = None
 
@@ -80,8 +76,10 @@ class Settings(BaseSettings):
     groq_api_key: str | None = None
     huggingface_model: str = "silma-ai/SILMA-Kashif-2B-Instruct-v1.0"
     hf_token: str | None = None
-    llm_temperature: float = 0.1
-    llm_max_tokens: int = 512
+    gemini_model: str = "gemini-3.5-flash-lite"
+    google_api_key: str | None = None
+    llm_temperature: float = 0.0
+    llm_max_tokens: int = 2000
 
     # ── Fanar ──────────────────────────────────────────────────────────────────
     fanar_model: str = "Fanar"
@@ -91,9 +89,14 @@ class Settings(BaseSettings):
     # ── Prompt ─────────────────────────────────────────────────────────────────
     prompt_language: str = "ar"
     system_role: str = (
+
     "أنت مساعد بحث في الحديث النبوي، مهمتك مساعدة المستخدم على فهم النصوص الشرعية "
     "من خلال ما يُسند إليك فقط من نصوص، دون سواها.\n\n"
-
+    "ولا تضف معلومات أو أحكامًا شرعية من عندك إذا لم تكن مدعومة بالسياق. "
+    "عند الاستشهاد بحديث نبوي، اذكر نص الحديث، ودرجة صحته، ومصدره، واسم الكتاب ورقم الحديث إن كان متوفرًا. "
+    "إذا تعددت الأدلة، فرتبها بوضوح مع بيان وجه الاستدلال. "
+    "إذا لم يكن في السياق ما يكفي للإجابة، فاذكر ذلك صراحة، ولا تخمّن أو تؤلف إجابة، "
+    "وانصح المستخدم بالرجوع إلى عالم أو جهة إفتاء موثوقة للحصول على فتوى أو إجابة دقيقة."
     "التزم بما يلي بدقة:\n"
     "1. أجب حصراً بناءً على النص المسند إليك في السياق. لا تستخدم معلومات من "
     "معرفتك الخاصة، ولا تُكمل أو تُقوّم أي حديث لم يُذكر نصه في السياق.\n"
@@ -136,7 +139,10 @@ class Settings(BaseSettings):
 
     # ── Agentic RAG ───────────────────────────────────────────────────────────
     use_agentic_rag: bool = True        # True = use LangGraph agent by default
-    agentic_max_loops: int = 3           # Max retrieve-rewrite cycles
+    agentic_max_loops: int = 1           # Max retrieve-rewrite cycles
+    k_decay: int = 0                     # Decrease k by this per agentic loop
+    fetch_k_decay: int = 0               # Decrease fetch_k by this per agentic loop
+    hadith_search_top_k: int = 1         # Results per candidate hadith lookup
 
     # ── Security ──────────────────────────────────────────────────────────────
     enable_prompt_injection_detection: bool = True
@@ -148,7 +154,7 @@ class Settings(BaseSettings):
     debug: bool = False
 
     # ── LangSmith ──────────────────────────────────────────────────────────────
-    langsmith_tracing: bool = False
+    langsmith_tracing: bool = True
     langsmith_endpoint: str | None = None
     langsmith_api_key: str | None = None
     langsmith_project: str | None = None
@@ -178,3 +184,17 @@ class Settings(BaseSettings):
 
 # Module-level singleton — import `settings` everywhere
 settings = Settings()
+
+# ── LangSmith/LangChain Environment Variable Forwarding ───────────────────────────
+if settings.langsmith_tracing:
+    import os
+    os.environ["LANGCHAIN_TRACING_V2"] = "true"
+    if settings.langsmith_project:
+        # Strip any quotes that might be present in the .env file
+        project_name = settings.langsmith_project.strip('"').strip("'")
+        os.environ["LANGCHAIN_PROJECT"] = project_name
+    if settings.langsmith_api_key:
+        os.environ["LANGCHAIN_API_KEY"] = settings.langsmith_api_key
+    if settings.langsmith_endpoint:
+        os.environ["LANGCHAIN_ENDPOINT"] = settings.langsmith_endpoint
+
