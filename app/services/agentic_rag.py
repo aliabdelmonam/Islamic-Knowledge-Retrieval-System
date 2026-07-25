@@ -294,7 +294,6 @@ def build_nodes(
     vectorstore,
     bm25_index,
     all_chunks,
-    parent_store,
     embedding_model,
     qdrant_client=None,
     embedding_model_name: str = "",
@@ -317,8 +316,7 @@ def build_nodes(
     llm              : LangChain BaseChatModel for grading, rewriting, and generation.
     vectorstore      : Qdrant vector store.
     bm25_index       : BM25Okapi index.
-    all_chunks       : List of all child Document chunks.
-    parent_store     : List of parent Document objects.
+    all_chunks       : List of all Document chunks.
     embedding_model  : SentenceTransformer for hadith-level similarity.
     qdrant_client    : QdrantClient for category retrieval.
     embedding_model_name : Model name for encoding category queries.
@@ -397,9 +395,9 @@ def build_nodes(
             
         return {"router_decision": decision, "answer": answer}
 
-    def edge_router_decision(state: AgentState) -> Literal["rewrite_query", "END"]:
+    def edge_router_decision(state: AgentState) -> Literal["retrieve", "END"]:
         if state["router_decision"] == "islamic":
-            return "rewrite_query"
+            return "retrieve"
         return "END"
 
     # ── Node: retrieve ──────────────────────────────────────────────────────
@@ -424,7 +422,6 @@ def build_nodes(
                     vectorstore=vectorstore,
                     bm25_index=bm25_index,
                     all_chunks=all_chunks,
-                    parent_store=parent_store,
                     embedding_model=embedding_model,
                     qdrant_client=qdrant_client,
                     embedding_model_name=embedding_model_name,
@@ -439,7 +436,6 @@ def build_nodes(
                     vectorstore=vectorstore,
                     bm25_index=bm25_index,
                     all_chunks=all_chunks,
-                    parent_store=parent_store,
                     embedding_model=embedding_model,
                     k=cur_k,
                     fetch_k=cur_fetch_k,
@@ -654,7 +650,7 @@ def build_nodes(
     graph.add_node("generate", node_generate)
 
     graph.add_edge(START, "router")
-    graph.add_conditional_edges("router", edge_router_decision, {"rewrite_query": "rewrite_query", "END": END})
+    graph.add_conditional_edges("router", edge_router_decision, {"retrieve": "retrieve", "END": END})
     graph.add_edge("rewrite_query", "retrieve")
     graph.add_edge("retrieve", "grade_documents")
     graph.add_conditional_edges(

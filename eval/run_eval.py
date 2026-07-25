@@ -53,15 +53,12 @@ def load_components():
     except Exception:
         pass
     
-    # Parents and chunks
-    parent_store_path = settings.models_dir / "parent_store.pkl"
+    # Chunks
     chunks_path = settings.models_dir / "chunks.pkl"
-    if not parent_store_path.exists() or not chunks_path.exists():
-        logger.error("Missing chunks or parent store.")
+    if not chunks_path.exists():
+        logger.error("Missing chunks.")
         sys.exit(1)
         
-    with open(parent_store_path, "rb") as f:
-        parent_store = pickle.load(f)
     with open(chunks_path, "rb") as f:
         all_chunks = pickle.load(f)
         
@@ -97,16 +94,49 @@ def load_components():
         max_tokens=settings.llm_max_tokens,
     )
     
+    # Agentic RAG
+    agent_graph = None
+    if settings.use_agentic_rag:
+        try:
+            from app.services.hadith_search import load_hadith_index
+            hadith_bm25_index, hadith_records = load_hadith_index(
+                settings.models_dir / "hadith_bm25_index.pkl"
+            )
+        except Exception:
+            hadith_bm25_index = None
+            hadith_records = None
+            
+        from app.services.agentic_rag import build_nodes
+        agent_graph = build_nodes(
+            llm=llm,
+            vectorstore=vectorstore,
+            bm25_index=bm25_index,
+            all_chunks=all_chunks,
+            embedding_model=embedding_model,
+            qdrant_client=client if cat_collection_ready else None,
+            embedding_model_name=settings.embedding_model if cat_collection_ready else "",
+            category_collection_name=settings.category_collection_name,
+            category_top_k=settings.category_top_k,
+            k=settings.retriever_k,
+            fetch_k=settings.retriever_fetch_k,
+            k_decay=settings.k_decay,
+            fetch_k_decay=settings.fetch_k_decay,
+            system_role=settings.system_role,
+            hadith_bm25_index=hadith_bm25_index,
+            hadith_records=hadith_records,
+            hadith_search_top_k=settings.hadith_search_top_k,
+        )
+    
     return {
         "embeddings": embeddings,
         "qdrant_client": client,
         "vectorstore": vectorstore,
         "cat_collection_ready": cat_collection_ready,
-        "parent_store": parent_store,
         "all_chunks": all_chunks,
         "bm25_index": bm25_index,
         "embedding_model": embedding_model,
-        "llm": llm
+        "llm": llm,
+        "agent_graph": agent_graph,
     }
 
 def main():
@@ -136,13 +166,24 @@ def main():
         
         # Retrieval
         q_norm = normalize_arabic(question)
-        if comps["cat_collection_ready"]:
+        if settings.use_agentic_rag and comps.get("agent_graph"):
+            from app.services.agentic_rag import run_agentic_rag
+            import uuid
+            result = run_agentic_rag(
+                query=question,
+                session_id=str(uuid.uuid4()),
+                agent_graph=comps["agent_graph"],
+                k=3,
+                fetch_k=8,
+            )
+            # Agentic generator uses 'good_documents' if not empty, otherwise fallback to 'all_documents'
+            docs = result["good_documents"] if result["good_documents"] else result["all_documents"]
+        elif comps["cat_collection_ready"]:
             docs = retrieve_with_category_filter(
                 query=q_norm,
                 vectorstore=comps["vectorstore"],
                 bm25_index=comps["bm25_index"],
                 all_chunks=comps["all_chunks"],
-                parent_store=comps["parent_store"],
                 embedding_model=comps["embedding_model"],
                 qdrant_client=comps["qdrant_client"],
                 embedding_model_name=settings.embedding_model,
@@ -157,7 +198,6 @@ def main():
                 vectorstore=comps["vectorstore"],
                 bm25_index=comps["bm25_index"],
                 all_chunks=comps["all_chunks"],
-                parent_store=comps["parent_store"],
                 embedding_model=comps["embedding_model"],
                 k=3,
                 fetch_k=8,

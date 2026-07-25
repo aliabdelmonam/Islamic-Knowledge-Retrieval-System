@@ -38,7 +38,7 @@ async def ask_endpoint(body: AskRequest, request: Request) -> AskResponse:
     state = request.app.state
 
     # Guard: all components must be ready
-    for attr in ("vectorstore", "bm25_index", "all_chunks", "parent_store", "embedding_model", "rag_chain"):
+    for attr in ("vectorstore", "bm25_index", "all_chunks", "embedding_model", "rag_chain"):
         if getattr(state, attr, None) is None:
             raise PipelineNotReadyError(attr)
 
@@ -59,7 +59,6 @@ async def ask_endpoint(body: AskRequest, request: Request) -> AskResponse:
                 vectorstore=state.vectorstore,
                 bm25_index=state.bm25_index,
                 all_chunks=state.all_chunks,
-                parent_store=state.parent_store,
                 embedding_model=state.embedding_model,
                 qdrant_client=state.qdrant_client if getattr(state, "category_collection_ready", False) else None,
                 embedding_model_name=settings.embedding_model if getattr(state, "category_collection_ready", False) else "",
@@ -122,7 +121,6 @@ async def ask_endpoint(body: AskRequest, request: Request) -> AskResponse:
             vectorstore=state.vectorstore,
             bm25_index=state.bm25_index,
             all_chunks=state.all_chunks,
-            parent_store=state.parent_store,
             embedding_model=state.embedding_model,
             k=body.k,
         )

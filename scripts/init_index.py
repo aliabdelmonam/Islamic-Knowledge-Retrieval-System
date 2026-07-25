@@ -42,25 +42,20 @@ def main() -> None:
     logger.info("Loaded %d parent documents.", len(docs))
 
     # 2. Build child chunks
-    from app.services.chunker import build_child_chunks
-    child_chunks, parent_store = build_child_chunks(
+    from app.services.chunker import build_chunks
+    child_chunks = build_chunks(
         raw_docs=docs,
         model_name=settings.embedding_model,
         chunk_size=settings.chunk_size,
         chunk_overlap=settings.chunk_overlap,
     )
-    logger.info("Built %d child chunks from %d parents.", len(child_chunks), len(parent_store))
+    logger.info("Built %d child chunks from %d parents.", len(child_chunks), len(docs))
 
-    # 3. Save parent_store and chunks to disk
+    # 3. Save chunks to disk
     models_dir = settings.models_dir
     models_dir.mkdir(parents=True, exist_ok=True)
 
-    parent_store_path = models_dir / "parent_store.pkl"
     chunks_path = models_dir / "chunks.pkl"
-
-    with open(parent_store_path, "wb") as f:
-        pickle.dump(parent_store, f)
-    logger.info("Saved parent_store (%d docs) → %s", len(parent_store), parent_store_path)
 
     with open(chunks_path, "wb") as f:
         pickle.dump(child_chunks, f)

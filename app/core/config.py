@@ -102,7 +102,7 @@ class Settings(BaseSettings):
 
     # ── Agentic RAG ───────────────────────────────────────────────────────────
     use_agentic_rag: bool = True        # True = use LangGraph agent by default
-    agentic_max_loops: int = 1           # Max retrieve-rewrite cycles
+    agentic_max_loops: int = 0           # Max retrieve-rewrite cycles
     k_decay: int = 0                     # Decrease k by this per agentic loop
     fetch_k_decay: int = 0               # Decrease fetch_k by this per agentic loop
     hadith_search_top_k: int = 1         # Results per candidate hadith lookup

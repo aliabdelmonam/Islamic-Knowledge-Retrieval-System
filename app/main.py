@@ -67,23 +67,19 @@ async def lifespan(app: FastAPI):
             settings.category_collection_name,
         )
 
-    # 3. Load child chunks + parent store from disk
-    parent_store_path = settings.models_dir / "parent_store.pkl"
+    # 3. Load child chunks from disk
     chunks_path = settings.models_dir / "chunks.pkl"
 
-    if not parent_store_path.exists() or not chunks_path.exists():
+    if not chunks_path.exists():
         raise RuntimeError(
-            f"Parent store or chunks not found. Run `python scripts/init_index.py` first.\n"
-            f"Expected: {parent_store_path}, {chunks_path}"
+            f"Chunks not found. Run `python scripts/init_index.py` first.\n"
+            f"Expected: {chunks_path}"
         )
 
-    with open(parent_store_path, "rb") as f:
-        app.state.parent_store = pickle.load(f)
     with open(chunks_path, "rb") as f:
         app.state.all_chunks = pickle.load(f)
     logger.info(
-        "[3/6] Loaded %d parents, %d child chunks.",
-        len(app.state.parent_store),
+        "[3/6] Loaded %d child chunks.",
         len(app.state.all_chunks),
     )
 
@@ -152,7 +148,6 @@ async def lifespan(app: FastAPI):
             vectorstore=app.state.vectorstore,
             bm25_index=app.state.bm25_index,
             all_chunks=app.state.all_chunks,
-            parent_store=app.state.parent_store,
             embedding_model=st_model,
             qdrant_client=app.state.qdrant_client if app.state.category_collection_ready else None,
             embedding_model_name=settings.embedding_model if app.state.category_collection_ready else "",

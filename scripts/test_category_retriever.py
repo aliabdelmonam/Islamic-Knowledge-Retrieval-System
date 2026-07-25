@@ -63,9 +63,7 @@ def load_components():
     logger.info("Loading chunks and parent store …")
     with open(settings.models_dir / "chunks.pkl", "rb") as f:
         all_chunks = pickle.load(f)
-    with open(settings.models_dir / "parent_store.pkl", "rb") as f:
-        parent_store = pickle.load(f)
-    logger.info("  %d chunks, %d parents loaded.", len(all_chunks), len(parent_store))
+    logger.info("  %d chunks loaded.", len(all_chunks))
 
     logger.info("Loading BM25 index …")
     from app.services.bm25_index import load_bm25
@@ -85,7 +83,6 @@ def load_components():
         vectorstore=vectorstore,
         bm25_index=bm25_index,
         all_chunks=all_chunks,
-        parent_store=parent_store,
         embedding_model=embedding_model,
     )
 
@@ -130,7 +127,6 @@ def main():
             vectorstore=components["vectorstore"],
             bm25_index=components["bm25_index"],
             all_chunks=components["all_chunks"],
-            parent_store=components["parent_store"],
             embedding_model=components["embedding_model"],
             qdrant_client=components["qdrant_client"],
             embedding_model_name=settings.embedding_model,
