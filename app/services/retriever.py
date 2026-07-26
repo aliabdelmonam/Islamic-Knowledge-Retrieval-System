@@ -6,10 +6,9 @@ Flow
 1. Dense search (Qdrant) on sharh index → fetch_k chunks
 2. BM25 search on sharh index → fetch_k chunks
 3. Merge candidates (deduplicate by chunk idx)
-4. Parent expansion (child chunks → parent sharh documents)
-5. Extract ALL hadiths from parent metadata (each parent may have N hadiths)
-6. Embed query + all hadiths → cosine similarity
-7. Return top-k RetrievedResult (correct hadith↔sharh pairing)
+4. Extract ALL hadiths from chunk metadata (each chunk may have N hadiths)
+5. Embed query + all hadiths → cosine similarity
+6. Return top-k RetrievedResult (correct hadith↔sharh pairing)
 """
 from __future__ import annotations
 
@@ -99,58 +98,35 @@ def _bm25_search_docs(
     return results
 
 
-# ── Parent expansion ───────────────────────────────────────────────────────────
-
-def _expand_to_parent(
-    chunks: list[Document],
-    parent_store: list[Document],
-) -> list[Document]:
-    """Replace child chunks by their parent documents (deduplicated)."""
-    seen: set[int] = set()
-    parents: list[Document] = []
-    for chunk in chunks:
-        pid = chunk.metadata.get("parent_id")
-        if pid is not None and pid not in seen:
-            seen.add(pid)
-            if 0 <= pid < len(parent_store):
-                parents.append(parent_store[pid])
-            else:
-                parents.append(chunk)  # fallback: keep chunk as-is
-        elif pid is None and id(chunk) not in seen:
-            seen.add(id(chunk))
-            parents.append(chunk)
-    return parents
-
-
 # ── Hadith-level embedding similarity ─────────────────────────────────────────
 
 def _hadith_similarity(
     embedding_model: SentenceTransformer,
     query: str,
-    parents: list[Document],
+    chunks: list[Document],
     top_k: int,
 ) -> list[RetrievedResult]:
     """
-    Extract all hadiths from parent docs, embed them + query,
+    Extract all hadiths from chunks (or documents), embed them + query,
     rank by cosine similarity, return top-k RetrievedResult.
     """
-    # Collect all (hadith_text, parent_doc, hadith_index) tuples
+    # Collect all (hadith_text, chunk_doc, hadith_index) tuples
     candidates: list[tuple[str, Document, int]] = []
-    for parent in parents:
-        hadiths = parent.metadata.get("hadith", [])
+    for chunk in chunks:
+        hadiths = chunk.metadata.get("hadith", [])
         if isinstance(hadiths, list):
             for i, h in enumerate(hadiths):
                 h_text = str(h).strip()
                 if h_text:
-                    candidates.append((h_text, parent, i))
+                    candidates.append((h_text, chunk, i))
         else:
             # Single hadith (not a list)
             h_text = str(hadiths).strip()
             if h_text:
-                candidates.append((h_text, parent, 0))
+                candidates.append((h_text, chunk, 0))
 
     if not candidates:
-        logger.warning("No hadiths found in %d parent documents", len(parents))
+        logger.warning("No hadiths found in %d chunk documents", len(chunks))
         return []
 
     hadith_texts = [c[0] for c in candidates]
@@ -207,7 +183,6 @@ def retrieve(
     vectorstore,
     bm25_index: BM25Okapi,
     all_chunks: list[Document],
-    parent_store: list[Document],
     embedding_model: SentenceTransformer,
     k: int = 5,
     fetch_k: int = 25,
@@ -217,8 +192,7 @@ def retrieve(
     1. Dense search (Qdrant) on sharh
     2. BM25 search on sharh
     3. Merge candidates (deduplicate)
-    4. Parent expansion
-    5. Hadith-level embedding similarity → top-k
+    4. Hadith-level embedding similarity → top-k
     """
     # 1 & 2: search
     dense_results = _dense_search(vectorstore, query, fetch_k)
@@ -244,11 +218,8 @@ def retrieve(
         logger.warning("No candidates found for query: %r", query)
         return []
 
-    # 4: expand to parents
-    expanded = _expand_to_parent(merged, parent_store)
-
-    # 5: hadith-level embedding similarity
-    results = _hadith_similarity(embedding_model, query, expanded, top_k=k)
+    # 4: hadith-level embedding similarity
+    results = _hadith_similarity(embedding_model, query, merged, top_k=k)
 
     logger.info("Retrieved %d results for query: %r", len(results), query[:60])
     return results
@@ -310,7 +281,6 @@ def retrieve_with_category_filter(
     vectorstore,
     bm25_index: BM25Okapi,
     all_chunks: list[Document],
-    parent_store: list[Document],
     embedding_model: SentenceTransformer,
     qdrant_client,
     embedding_model_name: str,
@@ -323,7 +293,7 @@ def retrieve_with_category_filter(
     Multi-stage retrieval:
     1. Retrieve top category_top_k categories via semantic search.
     2. Filter dense and BM25 searches to matching categories.
-    3. Merge → parent expansion → hadith embedding similarity → top-k.
+    3. Merge → hadith embedding similarity → top-k.
     """
     from app.services.category_retriever import retrieve_categories
 
@@ -340,7 +310,7 @@ def retrieve_with_category_filter(
     if not category_names:
         logger.warning("No categories matched — falling back to unfiltered retrieval")
         return retrieve(
-            query, vectorstore, bm25_index, all_chunks, parent_store,
+            query, vectorstore, bm25_index, all_chunks,
             embedding_model, k=k, fetch_k=fetch_k,
         )
 
@@ -371,15 +341,12 @@ def retrieve_with_category_filter(
     if not merged:
         logger.warning("No candidates after category filter — falling back to unfiltered")
         return retrieve(
-            query, vectorstore, bm25_index, all_chunks, parent_store,
+            query, vectorstore, bm25_index, all_chunks,
             embedding_model, k=k, fetch_k=fetch_k,
         )
 
-    # Parent expansion
-    expanded = _expand_to_parent(merged, parent_store)
-
     # Hadith-level embedding similarity
-    results = _hadith_similarity(embedding_model, query, expanded, top_k=k)
+    results = _hadith_similarity(embedding_model, query, merged, top_k=k)
 
     logger.info(
         "Retrieved %d results (category-filtered) for query: %r",

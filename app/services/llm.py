@@ -176,11 +176,13 @@ def build_llm(
 
     if provider == "gemini":
         from langchain_google_genai import ChatGoogleGenerativeAI
+        
         return ChatGoogleGenerativeAI(
             model=gemini_model,
             google_api_key=google_api_key or None,
             temperature=temperature,
             max_output_tokens=max_tokens,
+            thinking_level="minimal"
         )
 
     raise ValueError(f"Unknown LLM provider: {provider!r}")

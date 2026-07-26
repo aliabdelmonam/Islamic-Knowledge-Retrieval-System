@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import uuid
 
 from fastapi import APIRouter, Request
 
@@ -37,13 +38,32 @@ async def ask_endpoint(body: AskRequest, request: Request) -> AskResponse:
     state = request.app.state
 
     # Guard: all components must be ready
-    for attr in ("vectorstore", "bm25_index", "all_chunks", "parent_store", "embedding_model", "rag_chain"):
+    for attr in ("vectorstore", "bm25_index", "all_chunks", "embedding_model", "rag_chain"):
         if getattr(state, attr, None) is None:
             raise PipelineNotReadyError(attr)
 
     # Determine if we should use agentic mode:
     #   per-request flag > server config default
     use_agentic = body.use_agentic if body.use_agentic is not None else settings.use_agentic_rag
+
+<<<<<<< HEAD
+    # Prompt injection check
+    if settings.enable_prompt_injection_detection:
+        from app.services.security import prompt_injection_score
+        score, matched = prompt_injection_score(body.question)
+        if score >= settings.prompt_injection_threshold:
+            logger.warning(
+                "Prompt injection attempt detected! Score: %d, matched groups: %s, query: %r",
+                score, matched, body.question
+            )
+            return AskResponse(
+                answer="أعتذر، لا يمكنني الاستجابة لهذا الطلب. كيف يمكنني مساعدتك في سؤلك حول الأحاديث النبوية الشريفة؟",
+                sources=[],
+                agentic=use_agentic,
+            )
+=======
+    session_id = body.session_id or str(uuid.uuid4())
+>>>>>>> 96f5f5e6f5cea9118f6819b5652b661377bd7f9e
 
     # Prompt injection check
     if settings.enable_prompt_injection_detection:
@@ -71,7 +91,6 @@ async def ask_endpoint(body: AskRequest, request: Request) -> AskResponse:
                 vectorstore=state.vectorstore,
                 bm25_index=state.bm25_index,
                 all_chunks=state.all_chunks,
-                parent_store=state.parent_store,
                 embedding_model=state.embedding_model,
                 qdrant_client=state.qdrant_client if getattr(state, "category_collection_ready", False) else None,
                 embedding_model_name=settings.embedding_model if getattr(state, "category_collection_ready", False) else "",
@@ -93,6 +112,7 @@ async def ask_endpoint(body: AskRequest, request: Request) -> AskResponse:
         try:
             result = run_agentic_rag(
                 query=body.question,
+                session_id=session_id,
                 agent_graph=state.agent_graph,
                 k=body.k,
                 fetch_k=settings.retriever_fetch_k,
@@ -111,6 +131,7 @@ async def ask_endpoint(body: AskRequest, request: Request) -> AskResponse:
             agentic=True,
             loop_count=result["loop_count"],
             query_history=result["query_history"],
+            session_id=session_id,
         )
 
     # ── Regular RAG path ──────────────────────────────────────────────────
@@ -132,7 +153,6 @@ async def ask_endpoint(body: AskRequest, request: Request) -> AskResponse:
             vectorstore=state.vectorstore,
             bm25_index=state.bm25_index,
             all_chunks=state.all_chunks,
-            parent_store=state.parent_store,
             embedding_model=state.embedding_model,
             k=body.k,
         )
@@ -156,4 +176,5 @@ async def ask_endpoint(body: AskRequest, request: Request) -> AskResponse:
         sources=_to_retrieved_items(results),
         query_rewritten=query_rewritten,
         agentic=False,
+        session_id=session_id,
     )

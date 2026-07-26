@@ -34,6 +34,7 @@ rank_bm25>=0.2.2
 pandas>=2.2.0
 numpy>=1.26.0
 tqdm>=4.66.0
+redis>=5.0.0
 
 # LLM providers
 groq>=0.9.0

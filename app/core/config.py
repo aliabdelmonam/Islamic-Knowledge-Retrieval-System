@@ -79,7 +79,7 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-3.5-flash-lite"
     google_api_key: str | None = None
     llm_temperature: float = 0.0
-    llm_max_tokens: int = 2000
+    llm_max_tokens: int = 3000
 
     # ── Fanar ──────────────────────────────────────────────────────────────────
     fanar_model: str = "Fanar"
@@ -139,7 +139,7 @@ class Settings(BaseSettings):
 
     # ── Agentic RAG ───────────────────────────────────────────────────────────
     use_agentic_rag: bool = True        # True = use LangGraph agent by default
-    agentic_max_loops: int = 1           # Max retrieve-rewrite cycles
+    agentic_max_loops: int = 0           # Max retrieve-rewrite cycles
     k_decay: int = 0                     # Decrease k by this per agentic loop
     fetch_k_decay: int = 0               # Decrease fetch_k by this per agentic loop
     hadith_search_top_k: int = 1         # Results per candidate hadith lookup
@@ -158,6 +158,10 @@ class Settings(BaseSettings):
     langsmith_endpoint: str | None = None
     langsmith_api_key: str | None = None
     langsmith_project: str | None = None
+
+    # ── History ────────────────────────────────────────────────────────────────
+    redis_url: str = "redis://localhost:6379/0"
+    history_window_size: int = 3
 
     model_config = {
         "env_file": ".env",

@@ -34,28 +34,24 @@ def split_by_tokens(
     return chunks
 
 
-def build_child_chunks(
+def build_chunks(
     raw_docs: list[Document],
     model_name: str,
     chunk_size: int = 350,
     chunk_overlap: int = 32,
-) -> tuple[list[Document], list[Document]]:
+) -> list[Document]:
     """
-    Build token-based child chunks from parent documents.
+    Build token-based chunks from documents.
 
     Returns
     -------
     child_docs : list[Document]
-        Child chunks to index into the vector store.
-    parent_store : list[Document]
-        Original parent documents (indexed by parent_id).
+        Chunks to index into the vector store.
     """
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    parent_store: list[Document] = []
     child_docs: list[Document] = []
 
     for parent_id, parent_doc in enumerate(raw_docs):
-        parent_store.append(parent_doc)
 
         # Extract high-level categories from parent metadata
         high_level_cats = parse_high_level_categories(
@@ -76,8 +72,7 @@ def build_child_chunks(
             child_docs.append(Document(page_content=chunk_text, metadata=child_meta))
 
     logger.info(
-        "Chunking complete — parents: %d | child chunks: %d",
-        len(parent_store),
+        "Chunking complete — child chunks: %d",
         len(child_docs),
     )
 
@@ -86,4 +81,4 @@ def build_child_chunks(
         c.metadata["idx"] == i for i, c in enumerate(child_docs)
     ), "chunk idx/position mismatch!"
 
-    return child_docs, parent_store
+    return child_docs
