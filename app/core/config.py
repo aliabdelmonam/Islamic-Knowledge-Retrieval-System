@@ -35,11 +35,12 @@ class Settings(BaseSettings):
     chunk_overlap: int = 40
 
     # ── Embeddings ─────────────────────────────────────────────────────────────
-    embedding_provider: Literal["huggingface", "openai"] = "huggingface"
+    embedding_provider: Literal["huggingface"] = "huggingface"
     embedding_model: str = "Omartificial-Intelligence-Space/Arabic-Triplet-Matryoshka-V2"
-    openai_embedding_model: str = "text-embedding-3-small"
     embedding_dim: int = 768
     embedding_batch_size: int = 256
+    embedding_device: Literal["auto", "cpu", "cuda"] = "auto"
+    huggingface_cache_dir: Path | None = None
 
     # ── Vector Store (Qdrant) ──────────────────────────────────────────────────
     qdrant_host: str = "localhost"
@@ -63,28 +64,15 @@ class Settings(BaseSettings):
 
 
     # ── LLM ────────────────────────────────────────────────────────────────────
-    llm_provider: Literal[
-        "openai", "ollama", "groq", "huggingface", "huggingface_local", "fanar", "sbg", "gemini"
-    ] = "sbg"
-    sbg_model_id: str = "qwen.qwen3-vl-235b-a22b"
-    sbg_base_url: str = "http://apiaccess.iti.net.eg/api/v1"
-    sbg_api_key: str | None = None
-
-    openai_model: str = "gpt-4o-mini"
-    ollama_model: str = "llama3.2"
+    llm_provider: Literal["gemini", "groq", "cohere"] = "gemini"
     groq_model: str = "llama-3.3-70b-versatile"
     groq_api_key: str | None = None
-    huggingface_model: str = "silma-ai/SILMA-Kashif-2B-Instruct-v1.0"
-    hf_token: str | None = None
     gemini_model: str = "gemini-3.5-flash-lite"
     google_api_key: str | None = None
+    cohere_model: str = "command-a-03-2025"
+    cohere_api_key: str | None = None
     llm_temperature: float = 0.0
     llm_max_tokens: int = 3000
-
-    # ── Fanar ──────────────────────────────────────────────────────────────────
-    fanar_model: str = "Fanar"
-    fanar_api_key: str | None = None
-    fanar_base_url: str = "https://api.fanar.qa/v1"
 
     # ── Prompt ─────────────────────────────────────────────────────────────────
     prompt_language: str = "ar"
