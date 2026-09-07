@@ -1,4 +1,4 @@
-"""POST /api/v1/ask — full RAG: retrieve + hadith similarity + LLM generation."""
+"""POST /api/v1/ask — triage -> multi-source retrieval (general/hadith/quran) -> LLM generation."""
 from __future__ import annotations
 
 import logging
@@ -6,88 +6,99 @@ import uuid
 
 from fastapi import APIRouter, Request
 
-from app.core.config import settings
+from app.agents.retrieval_agent import RetrievedDocument
+from app.agents.helper.retrieval_agent_system_prompt import RETRIEVAL_SYSTEM_PROMPT
 from app.core.exceptions import LLMError, PipelineNotReadyError, RetrievalError
+from app.providers import Message
 from app.schemas.request import AskRequest
-from app.schemas.response import AskResponse, RetrievedItem
-from app.services import chain as chain_svc
-from app.services import retriever as retriever_svc
+from app.schemas.response import AskResponse
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-def _to_retrieved_items(results) -> list[RetrievedItem]:
-    return [
-        RetrievedItem(hadith=r.hadith, sharh=r.sharh, rawy=r.rawy, source=r.source,
-                      hokm=r.hokm, page_id=r.page_id, similarity_score=r.similarity_score)
-        for r in results
-    ]
+def _build_context(docs: list[RetrievedDocument]) -> str:
+    blocks = []
+    for i, doc in enumerate(docs, 1):
+        ref = doc.source_ref or doc.metadata.get("title", "")
+        blocks.append(
+            f"[{i}] (الفئة: {doc.category.value}, المصدر: {ref})\n{doc.text}"
+        )
+    return "\n\n".join(blocks)
+
+
+async def _generate_answer(llm, question: str, docs: list[RetrievedDocument]) -> str:
+    if not docs:
+        return "لم أجد مصادر كافية للإجابة على هذا السؤال بدقة."
+
+    prompt = f"السؤال: {question}\n\nالمصادر:\n{_build_context(docs)}\n\nالإجابة:"
+
+    response = await llm.generate(
+        messages=[
+            Message(role="system", content=RETRIEVAL_SYSTEM_PROMPT),
+            Message(role="user", content=prompt),
+        ],
+        temperature=0.2,
+        max_tokens=800,
+    )
+    return response.text
 
 
 @router.post("/ask", response_model=AskResponse)
 async def ask_endpoint(body: AskRequest, request: Request) -> AskResponse:
     state = request.app.state
-    for attr in ("vectorstore", "bm25_index", "all_chunks", "embedding_model", "rag_chain"):
+    for attr in ("llm", "triage_agent", "retrieval_agent"):
         if getattr(state, attr, None) is None:
             raise PipelineNotReadyError(attr)
 
-    use_agentic = body.use_agentic if body.use_agentic is not None else settings.use_agentic_rag
     session_id = body.session_id or str(uuid.uuid4())
 
-    if use_agentic:
-        if getattr(state, "agent_graph", None) is None:
-            from app.services.agentic_rag import build_nodes
-            state.agent_graph = build_nodes(
-                llm=state.llm, vectorstore=state.vectorstore, bm25_index=state.bm25_index,
-                all_chunks=state.all_chunks, embedding_model=state.embedding_model,
-                qdrant_client=state.qdrant_client if getattr(state, "category_collection_ready", False) else None,
-                category_collection_name=settings.category_collection_name,
-                category_top_k=settings.category_top_k, k=body.k, fetch_k=settings.retriever_fetch_k,
-                k_decay=settings.k_decay, fetch_k_decay=settings.fetch_k_decay,
-                system_role=settings.system_role,
-                hadith_bm25_index=getattr(state, "hadith_bm25_index", None),
-                hadith_records=getattr(state, "hadith_records", None),
-                hadith_search_top_k=settings.hadith_search_top_k,
-            )
+    try:
+        triage = await state.triage_agent.classify(body.question)
+    except Exception as exc:
+        logger.exception("Triage error: %s", exc)
+        raise LLMError(str(exc)) from exc
 
-        from app.services.agentic_rag import run_agentic_rag
-        try:
-            result = run_agentic_rag(query=body.question, session_id=session_id, agent_graph=state.agent_graph,
-                                     k=body.k, fetch_k=settings.retriever_fetch_k)
-        except Exception as exc:
-            logger.exception("Agentic RAG error: %s", exc)
-            raise LLMError(str(exc)) from exc
-
-        docs = result["good_documents"] or result["all_documents"]
+    if not triage.has_actionable_request:
         return AskResponse(
-            answer=result["answer"], sources=_to_retrieved_items(docs),
-            query_rewritten=result["final_query"] if result["final_query"] != result["original_query"] else None,
-            agentic=True, loop_count=result["loop_count"], query_history=result["query_history"], session_id=session_id,
+            answer=triage.canned_response(),
+            sources=[],
+            categories=[],
+            chitchat_type=triage.chitchat_type,
+            needs_clarification=False,
+            session_id=session_id,
         )
 
-    question = body.question
-    query_rewritten: str | None = None
-    if body.rewrite and settings.groq_api_key:
-        from app.services.query_rewriter import rewrite_query
-        rewritten = rewrite_query(question, settings.groq_api_key, settings.query_rewrite_model)
-        if rewritten != question:
-            query_rewritten, question = rewritten, rewritten
+    if triage.needs_clarification:
+        return AskResponse(
+            answer="سؤالك يحتاج إلى توضيح أكثر حتى أستطيع تحديد المصدر المناسب للإجابة — "
+                   "هل يمكنك تفصيل سؤالك أكثر؟",
+            sources=[],
+            categories=[],
+            chitchat_type=triage.chitchat_type,
+            needs_clarification=True,
+            session_id=session_id,
+        )
 
     try:
-        results = retriever_svc.retrieve(
-            query=question, vectorstore=state.vectorstore, bm25_index=state.bm25_index,
-            all_chunks=state.all_chunks, embedding_model=state.embedding_model, k=body.k,
-        )
+        retrieval = await state.retrieval_agent.run(body.question, triage)
     except Exception as exc:
         logger.exception("Retrieval error: %s", exc)
         raise RetrievalError(str(exc)) from exc
 
+    docs = retrieval.flattened()[: body.top_k]
+
     try:
-        answer = chain_svc.ask(question=body.question, chain=state.rag_chain, results=results)
+        answer = await _generate_answer(state.llm, body.question, docs)
     except Exception as exc:
-        logger.exception("LLM error: %s", exc)
+        logger.exception("LLM generation error: %s", exc)
         raise LLMError(str(exc)) from exc
 
-    return AskResponse(answer=answer, sources=_to_retrieved_items(results), query_rewritten=query_rewritten,
-                       agentic=False, session_id=session_id)
+    return AskResponse(
+        answer=answer,
+        sources=docs,
+        categories=triage.categories,
+        chitchat_type=triage.chitchat_type,
+        needs_clarification=False,
+        session_id=session_id,
+    )

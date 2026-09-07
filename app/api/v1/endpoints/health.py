@@ -13,12 +13,10 @@ router = APIRouter()
 async def health(request: Request) -> HealthResponse:
     state = request.app.state
     components = {
-        "embeddings": getattr(state, "embeddings", None) is not None,
-        "vectorstore": getattr(state, "vectorstore", None) is not None,
-        "bm25_index": getattr(state, "bm25_index", None) is not None,
-        "embedding_model": getattr(state, "embedding_model", None) is not None,
         "llm": getattr(state, "llm", None) is not None,
-        "rag_chain": getattr(state, "rag_chain", None) is not None,
+        "triage_agent": getattr(state, "triage_agent", None) is not None,
+        "retrieval_agent": getattr(state, "retrieval_agent", None) is not None,
+        "session_store": getattr(state, "session_store", None) is not None,
     }
     all_ready = all(components.values())
     return HealthResponse(
