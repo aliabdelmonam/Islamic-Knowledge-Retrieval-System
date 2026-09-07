@@ -5,6 +5,8 @@ from typing import Protocol
 from pydantic import BaseModel, Field
 
 from app.agents.helper.general_knowledge_retrieval import create_retriever
+from app.agents.helper.hadith_retrieval import create_hadith_retriever
+from app.agents.helper.quran_retreival import create_quran_retriever
 from app.agents.triage_agent import IslamicCategory
 
 from app.core import get_logger
@@ -110,30 +112,109 @@ class GeneralQuestionRetriever:
 
 class QuranRetriever:
 
+    def __init__(self):
+        self.retriever = create_quran_retriever()
+        logger.info(
+            f"QuranRetriever initialized "
+            f"(underlying_retriever={type(self.retriever).__name__})"
+        )
+
     async def retrieve(
         self,
         query: str,
         top_k: int = 5,
     ) -> list[RetrievedDocument]:
-        logger.warning(
-            f"QuranRetriever.retrieve called but not implemented yet "
-            f"(query_length={len(query) if query else 0}, top_k={top_k})"
+        logger.debug(
+            f"QuranRetriever.retrieve started "
+            f"(query_length={len(query) if query else 0}, top_k={top_k}, "
+            f"preview={(query or '')[:120]!r})"
         )
-        raise NotImplementedError("QuranRetriever is not implemented yet.")
+        start = time.perf_counter()
+
+        # The underlying Whoosh search is synchronous/blocking; run it off the
+        # event loop so it doesn't stall sibling retrievers running concurrently.
+        ayat = await asyncio.to_thread(self.retriever.retrieve, query, top_k)
+
+        logger.debug(
+            f"QuranRetriever raw results fetched "
+            f"(count={len(ayat)}, elapsed={time.perf_counter() - start:.2f}s, "
+            f"top_score={max((a.score for a in ayat), default=0.0):.4f})"
+        )
+
+        retrieved_docs = [
+            RetrievedDocument(
+                id=ayah.id,
+                text=ayah.text,
+                category=IslamicCategory.QURAN,
+                score=ayah.score,
+                source_ref=f"{ayah.surah_ar} ({ayah.surah_en})".strip(),
+                metadata={
+                    "tafsir": ayah.tafsir,
+                    "surah_ar": ayah.surah_ar,
+                    "surah_en": ayah.surah_en,
+                    **ayah.metadata,
+                },
+            )
+            for ayah in ayat
+        ]
+
+        logger.debug(
+            f"Mapped {len(retrieved_docs)} ayah(s) to RetrievedDocument "
+            f"(category={IslamicCategory.QURAN.value})"
+        )
+        return retrieved_docs
 
 
 class HadithRetriever:
 
+    def __init__(self):
+        self.retriever = create_hadith_retriever()
+        logger.info(
+            f"HadithRetriever initialized "
+            f"(underlying_retriever={type(self.retriever).__name__})"
+        )
+
     async def retrieve(
         self,
         query: str,
         top_k: int = 5,
     ) -> list[RetrievedDocument]:
-        logger.warning(
-            f"HadithRetriever.retrieve called but not implemented yet "
-            f"(query_length={len(query) if query else 0}, top_k={top_k})"
+        logger.debug(
+            f"HadithRetriever.retrieve started "
+            f"(query_length={len(query) if query else 0}, top_k={top_k}, "
+            f"preview={(query or '')[:120]!r})"
         )
-        raise NotImplementedError("HadithRetriever is not implemented yet.")
+        start = time.perf_counter()
+
+        # search_hadith is synchronous/blocking (Whoosh); offload to a thread.
+        hadiths = await asyncio.to_thread(self.retriever.retrieve, query, top_k)
+
+        logger.debug(
+            f"HadithRetriever raw results fetched "
+            f"(count={len(hadiths)}, elapsed={time.perf_counter() - start:.2f}s, "
+            f"top_score={max((h.score for h in hadiths), default=0.0):.4f})"
+        )
+
+        retrieved_docs = [
+            RetrievedDocument(
+                id=hadith.id,
+                text=hadith.hadith,
+                category=IslamicCategory.HADITH,
+                score=hadith.score,
+                source_ref=hadith.categories,
+                metadata={
+                    "clean_hadith": hadith.clean_hadith,
+                    **hadith.metadata,
+                },
+            )
+            for hadith in hadiths
+        ]
+
+        logger.debug(
+            f"Mapped {len(retrieved_docs)} hadith(s) to RetrievedDocument "
+            f"(category={IslamicCategory.HADITH.value})"
+        )
+        return retrieved_docs
 
 
 # ---------------------------------------------------------------------------
@@ -153,8 +234,8 @@ class RetrievalAgent:
 
         self.retrievers = {
             IslamicCategory.GENERAL_QUESTION: GeneralQuestionRetriever(),
-            # IslamicCategory.QURAN: QuranRetriever(),
-            # IslamicCategory.HADITH: HadithRetriever(),
+            IslamicCategory.QURAN: QuranRetriever(),
+            IslamicCategory.HADITH: HadithRetriever(),
         }
         logger.info(
             f"RetrievalAgent initialized (top_k={top_k}, "

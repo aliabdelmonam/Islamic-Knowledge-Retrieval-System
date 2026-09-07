@@ -1,38 +1,35 @@
-"""Response schemas for the Hadith RAG API."""
-from __future__ import annotations
+from pydantic import BaseModel, Field
 
-from typing import Optional
-
-from pydantic import BaseModel
-
-
-class RetrievedItem(BaseModel):
-    hadith: str
-    sharh: str
-    rawy: str
-    source: str
-    hokm: str
-    page_id: str = ""
-    similarity_score: Optional[float] = None
+from app.agents.retrieval_agent import RetrievedDocument
+from app.agents.triage_agent import ChitchatType, IslamicCategory
 
 
 class AskResponse(BaseModel):
     answer: str
-    sources: list[RetrievedItem]
-    query_rewritten: Optional[str] = None
-    # Agentic RAG metadata (populated only when agentic mode is used)
-    agentic: bool = False
-    loop_count: Optional[int] = None
-    query_history: Optional[list[str]] = None
-    session_id: Optional[str] = None
+    sources: list[RetrievedDocument] = Field(default_factory=list)
+    categories: list[IslamicCategory] = Field(default_factory=list)
+    chitchat_type: ChitchatType = ChitchatType.NONE
+    needs_clarification: bool = False
+    session_id: str
 
 
 class RetrieveResponse(BaseModel):
-    results: list[RetrievedItem]
-    query_used: str
+    query: str
+    categories: list[IslamicCategory] = Field(default_factory=list)
+    needs_clarification: bool = False
+    results: list[RetrievedDocument] = Field(default_factory=list)
+
+
+class ChatResponse(BaseModel):
+    answer: str
+    sources: list[RetrievedDocument] = Field(default_factory=list)
+    categories: list[IslamicCategory] = Field(default_factory=list)
+    chitchat_type: ChitchatType = ChitchatType.NONE
+    needs_clarification: bool = False
+    session_id: str
 
 
 class HealthResponse(BaseModel):
     status: str
-    components: dict[str, bool]
+    components: dict[str, bool] = Field(default_factory=dict)
     version: str

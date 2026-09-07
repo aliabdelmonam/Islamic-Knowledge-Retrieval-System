@@ -76,7 +76,7 @@ class Settings(BaseSettings):
     google_api_key: str | None = None
     cohere_model: str = "command-a-03-2025"
     cohere_api_key: str | None = None
-    llm_temperature: float = 0.0
+    triage_temperature: float = 0.0
     llm_max_tokens: int = 3000
 
     # ── Prompt ─────────────────────────────────────────────────────────────────
@@ -101,6 +101,14 @@ class Settings(BaseSettings):
     api_title: str = "Hadith RAG API"
     api_version: str = "1.0.0"
     debug: bool = False
+
+    # ── Retrieveal ──────────────────────────────────────────────────────────────
+    retrieval_top_k: int = 3
+    quran_json_path: Path = Path(r"C:\Users\aliab\OneDrive\Desktop\quran\quran_enriched.json")
+    quran_index_dir: Path = Path(r"quran_index_final")
+    hadith_csv_path: Path = Path(r"C:\Users\aliab\OneDrive\Desktop\hadith\Final_hadith.csv")
+    hadith_index_dir: Path = Path(r"hadith_search_index")
+
 
     # ── LangSmith ──────────────────────────────────────────────────────────────
     langsmith_tracing: bool = True
@@ -146,6 +154,28 @@ settings = Settings()
 
 def get_settings() -> Settings:
     return settings
+
+
+# Backwards-compatible accessor used across the codebase
+@property
+def _llm_model(self) -> str:  # type: ignore[unused-def]
+    """Return the configured model name for the selected LLM provider.
+
+    Some parts of the codebase expect `settings.llm_model`. Expose a
+    read-only attribute that maps the selected `llm_provider` to the
+    provider-specific model setting.
+    """
+    provider = (self.llm_provider or "").lower()
+    if provider == "groq":
+        return getattr(self, "groq_model", "")
+    if provider == "cohere":
+        return getattr(self, "cohere_model", "")
+    # default to gemini-style model name
+    return getattr(self, "gemini_model", "")
+
+
+# Attach property to Settings instance so `settings.llm_model` works
+setattr(Settings, "llm_model", _llm_model)
 
 # ── LangSmith/LangChain Environment Variable Forwarding ───────────────────────────
 if settings.langsmith_tracing:

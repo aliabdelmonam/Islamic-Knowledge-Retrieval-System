@@ -1,14 +1,13 @@
 """
 FastAPI application entry point.
-Loads all heavy components (embeddings, Qdrant, BM25, LLM)
-during startup lifespan, stores them in app.state for zero-cost injection.
+Loads the LLM client, triage agent, and retrieval agent (general question,
+hadith, and quran retrievers) once during startup lifespan, and stores them
+in app.state for zero-cost injection into the /ask and /retrieve endpoints.
 """
 from __future__ import annotations
 
 import logging
-import pickle
 from contextlib import asynccontextmanager
-from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,127 +21,54 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Load all ML components once at startup; clean up at shutdown."""
-    logger.info("=== Starting Hadith RAG API ===")
+    """Load the LLM client and both agents once at startup; clean up at shutdown."""
+    logger.info("=== Starting Islamic Knowledge RAG API ===")
 
-    # 1. Embeddings (LangChain wrapper — used by Qdrant vectorstore)
-    from app.providers import EmbeddingProviderFactory
-    embedding_provider = EmbeddingProviderFactory.create(settings)
-    app.state.embeddings = embedding_provider.create_embeddings()
-    logger.info("[1/6] Embeddings ready.")
+    from app.providers import Provider, ProviderFactory
+    from app.agents.triage_agent import IslamicCategory, TriageAgent
+    from app.agents.retrieval_agent import RetrievalAgent
+    from app.services.session_store import SessionStore
 
-    # 2. Qdrant vector store
-    from app.services.vector_store import get_qdrant_client, get_vectorstore
-    client = get_qdrant_client(
-        host=settings.qdrant_host,
-        port=settings.qdrant_port,
-        prefer_grpc=settings.qdrant_prefer_grpc,
-        timeout=settings.qdrant_timeout,
-        url=settings.qdrant_url,
-        api_key=settings.qdrant_api_key,
-    )
-    app.state.qdrant_client = client
-    app.state.vectorstore = get_vectorstore(
-        client, app.state.embeddings, settings.collection_name
-    )
-    logger.info("[2/6] Qdrant vector store ready.")
-
-    # 2b. Category collection (for multi-stage retrieval)
-    try:
-        cat_info = client.get_collection(settings.category_collection_name)
-        app.state.category_collection_ready = (cat_info.points_count or 0) > 0
-    except Exception:
-        app.state.category_collection_ready = False
-
-    if app.state.category_collection_ready:
-        logger.info("[2b/6] Category collection '%s' available.", settings.category_collection_name)
-    else:
-        logger.warning(
-            "[2b/6] Category collection '%s' not found — "
-            "run `python scripts/init_category_index.py` to enable multi-stage retrieval.",
-            settings.category_collection_name,
-        )
-
-    # 3. Load child chunks from disk
-    chunks_path = settings.models_dir / "chunks.pkl"
-
-    if not chunks_path.exists():
-        raise RuntimeError(
-            f"Chunks not found. Run `python scripts/init_index.py` first.\n"
-            f"Expected: {chunks_path}"
-        )
-
-    with open(chunks_path, "rb") as f:
-        app.state.all_chunks = pickle.load(f)
-    logger.info(
-        "[3/6] Loaded %d child chunks.",
-        len(app.state.all_chunks),
-    )
-
-    # 4. BM25 index
-    from app.services.bm25_index import load_bm25
-    app.state.bm25_index = load_bm25(settings.models_dir / "bm25_index.pkl")
-    logger.info("[4/6] BM25 index ready.")
-
-    # 4b. Hadith BM25 index for candidate lookup
-    try:
-        from app.services.hadith_search import load_hadith_index
-        app.state.hadith_bm25_index, app.state.hadith_records = load_hadith_index(
-            settings.models_dir / "hadith_bm25_index.pkl"
-        )
-        logger.info("[4b/6] Hadith BM25 index ready.")
-    except Exception as exc:
-        logger.warning("[4b/6] Failed to load Hadith BM25 index: %s", exc)
-        app.state.hadith_bm25_index = None
-        app.state.hadith_records = None
-
-    # 5. Shared Hugging Face model for hadith-level similarity
-    st_model = embedding_provider.load_sentence_transformer()
-    app.state.embedding_model = st_model
-    logger.info("[5/6] SentenceTransformer ready for hadith similarity.")
-
-    # 6. LLM + RAG chain
-    from app.providers import LLMProviderFactory
-    from app.services.chain import build_rag_chain
-
-    llm = LLMProviderFactory.create(settings).create_chat_model()
+    # 1. LLM client — shared by triage classification and final answer generation
+    llm = ProviderFactory.create(Provider.GEMINI, model=settings.llm_model)
     app.state.llm = llm
-    app.state.rag_chain = build_rag_chain(llm, settings.system_role)
-    logger.info("[6/6] LLM and RAG chain ready.")
+    logger.info("[1/4] LLM client ready (model=%s).", settings.llm_model)
 
-    # 6b. Agentic RAG graph (optional)
-    app.state.agent_graph = None
-    if settings.use_agentic_rag:
-        from app.services.agentic_rag import build_nodes
-        app.state.agent_graph = build_nodes(
-            llm=llm,
-            vectorstore=app.state.vectorstore,
-            bm25_index=app.state.bm25_index,
-            all_chunks=app.state.all_chunks,
-            embedding_model=st_model,
-            qdrant_client=app.state.qdrant_client if app.state.category_collection_ready else None,
-            category_collection_name=settings.category_collection_name,
-            category_top_k=settings.category_top_k,
-            k=settings.retriever_k,
-            fetch_k=settings.retriever_fetch_k,
-            k_decay=settings.k_decay,
-            fetch_k_decay=settings.fetch_k_decay,
-            system_role=settings.system_role,
-            hadith_bm25_index=app.state.hadith_bm25_index,
-            hadith_records=app.state.hadith_records,
-            hadith_search_top_k=settings.hadith_search_top_k,
-        )
-        logger.info("[6b] Agentic RAG graph compiled.")
-    else:
-        logger.info("[6b] Agentic RAG disabled (USE_AGENTIC_RAG=false).")
+    # 2. Triage agent — routes each question to general_question / hadith / quran
+    app.state.triage_agent = TriageAgent(
+        llm=llm,
+        temperature=settings.triage_temperature,
+    )
+    logger.info("[2/4] Triage agent ready.")
 
-    logger.info("=== Hadith RAG API ready to serve requests ===")
+    # 3. Retrieval agent — constructs all three retrievers:
+    #      - GeneralQuestionRetriever (Qdrant, fatwa embeddings)
+    #      - HadithRetriever (Whoosh index over the hadith CSV)
+    #      - QuranRetriever (Whoosh index over the enriched Quran JSON)
+    #    Each one loads/builds its index synchronously in __init__, so this
+    #    must happen once here at startup, never per-request.
+    app.state.retrieval_agent = RetrievalAgent(top_k=settings.retrieval_top_k)
+    logger.info(
+        "[3/4] Retrieval agent ready (categories=%s).",
+        [c.value for c in app.state.retrieval_agent.retrievers],
+    )
+
+    # 4. Session store — backs the multi-turn /chat endpoint with rolling
+    #    per-session conversation history.
+    app.state.session_store = SessionStore()
+    logger.info("[4/4] Session store ready.")
+
+    logger.info("=== Islamic Knowledge RAG API ready to serve requests ===")
     yield
 
     # Shutdown
-    logger.info("Shutting down Hadith RAG API…")
-    if hasattr(app.state, "qdrant_client"):
-        app.state.qdrant_client.close()
+    logger.info("Shutting down Islamic Knowledge RAG API…")
+    general_retriever = app.state.retrieval_agent.retrievers.get(IslamicCategory.GENERAL_QUESTION)
+    if general_retriever is not None:
+        try:
+            await general_retriever.retriever.client.close()
+        except Exception:
+            logger.exception("Error closing Qdrant client")
 
 
 # ── App factory ────────────────────────────────────────────────────────────────
@@ -151,7 +77,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title=settings.api_title,
         version=settings.api_version,
-        description="Production RAG API for Hadith Q&A",
+        description="Islamic knowledge RAG API — triage + general fatwa / hadith / quran retrieval",
         lifespan=lifespan,
     )
 
