@@ -89,3 +89,7 @@ yarn-error.log
 # DB
 chroma_db/
 qdrant_storage/
+
+~   
+
+hadith_search_index/
