@@ -20,7 +20,7 @@ def build_category_index(
     collection_name: str,
     category_names: list[str],
     category_descriptions: list[str],
-    model_name: str,
+    embedding_model,
     embedding_dim: int = 768,
 ) -> None:
     """
@@ -36,14 +36,11 @@ def build_category_index(
         High-level category names (e.g. ``['صلاة', 'صيام', ...]``).
     category_descriptions : list[str]
         Corresponding descriptions for each category.
-    model_name : str
-        SentenceTransformer model for encoding.
+    embedding_model
+        Configured Hugging Face model for encoding.
     embedding_dim : int
         Dimension of the embedding vectors.
     """
-    import torch
-    from sentence_transformers import SentenceTransformer
-
     collections = [c.name for c in client.get_collections().collections]
 
     if collection_name in collections:
@@ -66,13 +63,9 @@ def build_category_index(
         vectors_config=VectorParams(size=embedding_dim, distance=Distance.COSINE),
     )
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    logger.info("Encoding %d category descriptions on %s…", len(category_descriptions), device)
-    st_model = SentenceTransformer(model_name, device=device)
-    if device == "cuda":
-        st_model.half()
+    logger.info("Encoding %d category descriptions…", len(category_descriptions))
 
-    embs = st_model.encode(
+    embs = embedding_model.encode(
         category_descriptions,
         batch_size=64,
         convert_to_numpy=True,
@@ -104,7 +97,7 @@ def build_category_index(
 def retrieve_categories(
     query: str,
     client: QdrantClient,
-    model_name: str,
+    embedding_model,
     collection_name: str = "hadith_categories",
     top_k: int = 5,
 ) -> list[tuple[str, float]]:
@@ -118,8 +111,8 @@ def retrieve_categories(
         User query in Arabic.
     client : QdrantClient
         Connected Qdrant client.
-    model_name : str
-        SentenceTransformer model name (must match indexing model).
+    embedding_model
+        Configured Hugging Face model (must match the indexing model).
     collection_name : str
         Qdrant collection holding category vectors.
     top_k : int
@@ -130,15 +123,7 @@ def retrieve_categories(
     list[tuple[str, float]]
         List of ``(category_name, similarity_score)`` sorted by score desc.
     """
-    import torch
-    from sentence_transformers import SentenceTransformer
-
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    st_model = SentenceTransformer(model_name, device=device)
-    if device == "cuda":
-        st_model.half()
-
-    query_vec = st_model.encode(
+    query_vec = embedding_model.encode(
         query,
         convert_to_numpy=True,
         normalize_embeddings=True,

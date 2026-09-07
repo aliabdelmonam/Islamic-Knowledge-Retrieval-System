@@ -9,11 +9,9 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-import torch
 from langchain_core.documents import Document
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import Distance, PointStruct, VectorParams
-from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
@@ -55,7 +53,7 @@ def index_chunks(
     chunks: list[Document],
     client: QdrantClient,
     collection_name: str,
-    model_name: str,
+    embedding_model,
     embedding_dim: int = 768,
     batch_size: int = 100,
     encode_batch_size: int = 256,
@@ -98,17 +96,12 @@ def index_chunks(
             vectors_config=VectorParams(size=embedding_dim, distance=Distance.COSINE),
         )
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    logger.info("Encoding %d chunks on %s…", expected, device)
-    st_model = SentenceTransformer(model_name, device=device)
-    if device == "cuda":
-        st_model.half()
-        torch.backends.cudnn.benchmark = True  # type: ignore[attr-defined]
+    logger.info("Encoding %d chunks with the configured Hugging Face model…", expected)
 
     texts = [c.page_content for c in chunks]
     metadatas = [c.metadata for c in chunks]
 
-    embs = st_model.encode(
+    embs = embedding_model.encode(
         texts,
         batch_size=encode_batch_size,
         convert_to_numpy=True,

@@ -40,13 +40,9 @@ TEST_QUERIES = [
 def load_components():
     """Load all required ML components."""
     logger.info("Loading embeddings [%s] …", settings.embedding_model)
-    from app.services.embeddings import build_embeddings
-    embeddings = build_embeddings(
-        provider=settings.embedding_provider,
-        model_name=settings.embedding_model,
-        openai_model=settings.openai_embedding_model,
-        batch_size=settings.embedding_batch_size,
-    )
+    from app.providers import EmbeddingProviderFactory
+    embedding_provider = EmbeddingProviderFactory.create(settings)
+    embeddings = embedding_provider.create_embeddings()
 
     logger.info("Connecting to Qdrant …")
     from app.services.vector_store import get_qdrant_client, get_vectorstore
@@ -69,13 +65,8 @@ def load_components():
     from app.services.bm25_index import load_bm25
     bm25_index = load_bm25(settings.models_dir / "bm25_index.pkl")
 
-    logger.info("Loading SentenceTransformer for hadith similarity …")
-    import torch
-    from sentence_transformers import SentenceTransformer
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    embedding_model = SentenceTransformer(settings.embedding_model, device=device)
-    if device == "cuda":
-        embedding_model.half()
+    logger.info("Loading Hugging Face model for hadith similarity …")
+    embedding_model = embedding_provider.load_sentence_transformer()
 
     return dict(
         embeddings=embeddings,
@@ -105,7 +96,7 @@ def main():
         categories = retrieve_categories(
             query=query,
             client=components["qdrant_client"],
-            model_name=settings.embedding_model,
+            embedding_model=components["embedding_model"],
             collection_name=settings.category_collection_name,
             top_k=settings.category_top_k,
         )
@@ -129,7 +120,6 @@ def main():
             all_chunks=components["all_chunks"],
             embedding_model=components["embedding_model"],
             qdrant_client=components["qdrant_client"],
-            embedding_model_name=settings.embedding_model,
             category_collection_name=settings.category_collection_name,
             category_top_k=settings.category_top_k,
             k=settings.retriever_k,

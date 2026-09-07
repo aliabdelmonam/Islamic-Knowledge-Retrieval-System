@@ -57,14 +57,13 @@ RAG-Hadith/
 │   │   ├── config.py           # Pydantic BaseSettings config schema
 │   │   └── logging.py
 │   ├── schemas/                # Request and response models (Pydantic)
+│   ├── providers/              # LLM and Hugging Face embedding factories
 │   └── services/               # System components and business logic
 │       ├── agentic_rag.py      # LangGraph state graph compilation and nodes
 │       ├── arabic_utils.py     # Diacritic stripping and character normalization
 │       ├── bm25_index.py       # BM25 builders & loaders
 │       ├── category_retriever.py # Topic category semantic search
-│       ├── embeddings.py       # Embeddings wrappers (HuggingFace / OpenAI)
 │       ├── hadith_search.py    # Direct lexical search on clean hadiths
-│       ├── llm.py              # LLM factory (SBG, OpenAI, Groq, Ollama, Gemini, etc.)
 │       ├── retriever.py        # Central multi-stage hybrid retriever
 │       └── security.py         # Obfuscation normalization & injection checkers
 ├── eval/                       # Evaluation & Benchmark Pipeline
@@ -104,8 +103,8 @@ Clone the repository and copy the environment template:
 cp .env.example .env
 ```
 Fill out the keys in `.env`:
-*   **LLM Provider Settings**: Set `LLM_PROVIDER` (e.g., `sbg`, `openai`, `gemini`, `groq`, `ollama`).
-*   **API Keys**: Enter your respective LLM provider API keys (`GOOGLE_API_KEY`, `OPENAI_API_KEY`, `GROQ_API_KEY`, etc.).
+*   **LLM Provider Settings**: Set `LLM_PROVIDER` to `gemini`, `groq`, or `cohere`, then choose the matching `*_MODEL` variable.
+*   **API Keys**: Enter the matching key: `GOOGLE_API_KEY`, `GROQ_API_KEY`, or `COHERE_API_KEY`.
 *   **Qdrant Settings**: Define your vector store connection details. If running Qdrant locally, the defaults (`localhost:6333`) are ready to go.
 
 ### 3. Initialize the Indexes

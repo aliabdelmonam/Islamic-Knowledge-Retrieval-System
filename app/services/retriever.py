@@ -283,7 +283,6 @@ def retrieve_with_category_filter(
     all_chunks: list[Document],
     embedding_model: SentenceTransformer,
     qdrant_client,
-    embedding_model_name: str,
     category_collection_name: str = "hadith_categories",
     category_top_k: int = 5,
     k: int = 5,
@@ -301,7 +300,7 @@ def retrieve_with_category_filter(
     matched = retrieve_categories(
         query=query,
         client=qdrant_client,
-        model_name=embedding_model_name,
+        embedding_model=embedding_model,
         collection_name=category_collection_name,
         top_k=category_top_k,
     )

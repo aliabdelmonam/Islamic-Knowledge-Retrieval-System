@@ -1,8 +1,4 @@
-"""
-Simple test script to verify Gemini integration.
-Run:
-    python scripts/test_gemini.py
-"""
+"""Verify the configured Gemini provider can be constructed."""
 import sys
 from pathlib import Path
 
@@ -14,25 +10,17 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from app.core.config import settings
-from app.services.llm import build_llm
+from app.providers import LLMProviderFactory
 
 def main():
     print("=== Testing Gemini API Integration ===")
     
-    # Temporarily set provider to gemini
-    provider = "gemini"
     print(f"Gemini Model in config: {settings.gemini_model}")
     print(f"Google API Key present in settings: {bool(settings.google_api_key)}")
     
     try:
-        print("Initializing ChatGoogleGenerativeAI...")
-        llm = build_llm(
-            provider=provider,
-            gemini_model=settings.gemini_model,
-            google_api_key=settings.google_api_key or "",
-            temperature=settings.llm_temperature,
-            max_tokens=settings.llm_max_tokens,
-        )
+        print("Initializing ChatGoogleGenerativeAI through the provider factory...")
+        llm = LLMProviderFactory.create(settings, provider="gemini").create_chat_model()
         print("LLM built successfully.")
         
         print("Sending a test prompt: 'السلام عليكم'")

@@ -62,6 +62,7 @@ def main() -> None:
     logger.info("Saved chunks (%d docs) → %s", len(child_chunks), chunks_path)
 
     # 4. Connect to Qdrant and index
+    from app.providers import EmbeddingProviderFactory
     from app.services.vector_store import get_qdrant_client, index_chunks
     client = get_qdrant_client(
         host=settings.qdrant_host,
@@ -71,12 +72,13 @@ def main() -> None:
         url=settings.qdrant_url,
         api_key=settings.qdrant_api_key,
     )
+    embedding_model = EmbeddingProviderFactory.create(settings).load_sentence_transformer()
 
     index_chunks(
         chunks=child_chunks,
         client=client,
         collection_name=settings.collection_name,
-        model_name=settings.embedding_model,
+        embedding_model=embedding_model,
         embedding_dim=settings.embedding_dim,
         encode_batch_size=settings.embedding_batch_size,
     )

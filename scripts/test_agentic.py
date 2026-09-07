@@ -56,13 +56,9 @@ TEST_QUERIES = [
 def load_components():
     """Load all required ML components using app.core.config.settings."""
     logger.info("Loading embeddings [%s] …", settings.embedding_model)
-    from app.services.embeddings import build_embeddings
-    embeddings = build_embeddings(
-        provider=settings.embedding_provider,
-        model_name=settings.embedding_model,
-        openai_model=settings.openai_embedding_model,
-        batch_size=settings.embedding_batch_size,
-    )
+    from app.providers import EmbeddingProviderFactory, LLMProviderFactory
+    embedding_provider = EmbeddingProviderFactory.create(settings)
+    embeddings = embedding_provider.create_embeddings()
 
     logger.info("Connecting to Qdrant [%s:%d] …", settings.qdrant_host, settings.qdrant_port)
     from app.services.vector_store import get_qdrant_client, get_vectorstore
@@ -93,35 +89,11 @@ def load_components():
     from app.services.hadith_search import load_hadith_index
     hadith_bm25_index, hadith_records = load_hadith_index(settings.models_dir / "hadith_bm25_index.pkl")
 
-    logger.info("Loading SentenceTransformer [%s] for hadith similarity …", settings.embedding_model)
-    import torch
-    from sentence_transformers import SentenceTransformer
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    embedding_model = SentenceTransformer(settings.embedding_model, device=device)
-    if device == "cuda":
-        embedding_model.half()
+    logger.info("Loading Hugging Face model [%s] for hadith similarity …", settings.embedding_model)
+    embedding_model = embedding_provider.load_sentence_transformer()
 
     logger.info("Building LLM [provider=%s] …", settings.llm_provider)
-    from app.services.llm import build_llm
-    llm = build_llm(
-        provider=settings.llm_provider,
-        sbg_model_id=settings.sbg_model_id,
-        sbg_base_url=settings.sbg_base_url,
-        sbg_api_key=settings.sbg_api_key or "",
-        openai_model=settings.openai_model,
-        groq_model=settings.groq_model,
-        groq_api_key=settings.groq_api_key or "",
-        ollama_model=settings.ollama_model,
-        hf_model=settings.huggingface_model,
-        hf_token=settings.hf_token or "",
-        fanar_model=settings.fanar_model,
-        fanar_api_key=settings.fanar_api_key or "",
-        fanar_base_url=settings.fanar_base_url,
-        gemini_model=settings.gemini_model,
-        google_api_key=settings.google_api_key or "",
-        temperature=settings.llm_temperature,
-        max_tokens=settings.llm_max_tokens,
-    )
+    llm = LLMProviderFactory.create(settings).create_chat_model()
 
     return dict(
         llm=llm,
@@ -155,7 +127,6 @@ def main():
         all_chunks=components["all_chunks"],
         embedding_model=components["embedding_model"],
         qdrant_client=components["qdrant_client"],
-        embedding_model_name=settings.embedding_model,
         category_collection_name=settings.category_collection_name,
         category_top_k=settings.category_top_k,
         k=settings.retriever_k,

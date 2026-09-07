@@ -296,7 +296,6 @@ def build_nodes(
     all_chunks,
     embedding_model,
     qdrant_client=None,
-    embedding_model_name: str = "",
     category_collection_name: str = "hadith_categories",
     category_top_k: int = 5,
     k: int = 5,
@@ -319,7 +318,6 @@ def build_nodes(
     all_chunks       : List of all Document chunks.
     embedding_model  : SentenceTransformer for hadith-level similarity.
     qdrant_client    : QdrantClient for category retrieval.
-    embedding_model_name : Model name for encoding category queries.
     category_collection_name : Qdrant collection for categories.
     category_top_k   : Number of categories to match per query.
     k                : Number of final results to retrieve per loop.
@@ -332,35 +330,8 @@ def build_nodes(
     hadith_search_top_k : Number of hadiths to fetch per candidate.
     """
 
-    from app.core.config import settings
-    from app.services.llm import build_llm
-
-    def get_node_llm(p: str, m: str):
-        return build_llm(
-            provider=p,
-            sbg_model_id=m if p == "sbg" else settings.sbg_model_id,
-            sbg_base_url=settings.sbg_base_url,
-            sbg_api_key=settings.sbg_api_key or "",
-            openai_model=m if p == "openai" else settings.openai_model,
-            groq_model=m if p == "groq" else settings.groq_model,
-            groq_api_key=settings.groq_api_key or "",
-            ollama_model=m if p == "ollama" else settings.ollama_model,
-            hf_model=m if p in ("huggingface", "huggingface_local") else settings.huggingface_model,
-            hf_token=settings.hf_token or "",
-            fanar_model=m if p == "fanar" else settings.fanar_model,
-            fanar_api_key=settings.fanar_api_key or "",
-            fanar_base_url=settings.fanar_base_url,
-            gemini_model=m if p == "gemini" else settings.gemini_model,
-            google_api_key=settings.google_api_key or "",
-            temperature=settings.llm_temperature,
-            max_tokens=settings.llm_max_tokens,
-        )
-
-    hyde_llm = get_node_llm("gemini", "gemini-3.5-flash-lite").with_fallbacks([get_node_llm("sbg", "qwen.qwen3-vl-235b-a22b")])
-    grade_llm = get_node_llm("sbg", "openai.gpt-oss-120b-1:0").with_fallbacks([get_node_llm("gemini", "gemini-3.5-flash-lite")])
-    rewrite_llm = get_node_llm("gemini", "gemini-3.5-flash-lite").with_fallbacks([get_node_llm("sbg", "qwen.qwen3-vl-235b-a22b")])
-    generate_llm = get_node_llm("gemini", "gemini-3.5-flash-lite").with_fallbacks([get_node_llm("sbg", "qwen.qwen3-vl-235b-a22b")])
-    router_llm = get_node_llm("gemini", "gemini-3.5-flash-lite").with_fallbacks([get_node_llm("sbg", "qwen.qwen3-vl-235b-a22b")])
+    # All agent nodes use the application-configured provider instance.
+    hyde_llm = grade_llm = rewrite_llm = generate_llm = router_llm = llm
 
     rag_chain = build_rag_chain(generate_llm, system_role)
     grade_chain = _GRADE_PROMPT | grade_llm | StrOutputParser()
@@ -416,7 +387,7 @@ def build_nodes(
 
         def _do_hybrid_search() -> list[RetrievedResult]:
             # Use category-filtered retrieval if category index is available
-            if qdrant_client and embedding_model_name:
+            if qdrant_client:
                 return retrieve_with_category_filter(
                     query=query,
                     vectorstore=vectorstore,
@@ -424,7 +395,6 @@ def build_nodes(
                     all_chunks=all_chunks,
                     embedding_model=embedding_model,
                     qdrant_client=qdrant_client,
-                    embedding_model_name=embedding_model_name,
                     category_collection_name=category_collection_name,
                     category_top_k=category_top_k,
                     k=cur_k,

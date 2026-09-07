@@ -26,13 +26,9 @@ async def lifespan(app: FastAPI):
     logger.info("=== Starting Hadith RAG API ===")
 
     # 1. Embeddings (LangChain wrapper — used by Qdrant vectorstore)
-    from app.services.embeddings import build_embeddings
-    app.state.embeddings = build_embeddings(
-        provider=settings.embedding_provider,
-        model_name=settings.embedding_model,
-        openai_model=settings.openai_embedding_model,
-        batch_size=settings.embedding_batch_size,
-    )
+    from app.providers import EmbeddingProviderFactory
+    embedding_provider = EmbeddingProviderFactory.create(settings)
+    app.state.embeddings = embedding_provider.create_embeddings()
     logger.info("[1/6] Embeddings ready.")
 
     # 2. Qdrant vector store
@@ -100,41 +96,16 @@ async def lifespan(app: FastAPI):
         app.state.hadith_bm25_index = None
         app.state.hadith_records = None
 
-    # 5. SentenceTransformer for hadith-level embedding similarity
-    import torch
-    from sentence_transformers import SentenceTransformer
-
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    logger.info("Loading SentenceTransformer '%s' on %s for hadith similarity…", settings.embedding_model, device)
-    st_model = SentenceTransformer(settings.embedding_model, device=device)
-    if device == "cuda":
-        st_model.half()
+    # 5. Shared Hugging Face model for hadith-level similarity
+    st_model = embedding_provider.load_sentence_transformer()
     app.state.embedding_model = st_model
     logger.info("[5/6] SentenceTransformer ready for hadith similarity.")
 
     # 6. LLM + RAG chain
-    from app.services.llm import build_llm
+    from app.providers import LLMProviderFactory
     from app.services.chain import build_rag_chain
 
-    llm = build_llm(
-        provider=settings.llm_provider,
-        sbg_model_id=settings.sbg_model_id,
-        sbg_base_url=settings.sbg_base_url,
-        sbg_api_key=settings.sbg_api_key or "",
-        openai_model=settings.openai_model,
-        groq_model=settings.groq_model,
-        groq_api_key=settings.groq_api_key or "",
-        ollama_model=settings.ollama_model,
-        hf_model=settings.huggingface_model,
-        hf_token=settings.hf_token or "",
-        fanar_model=settings.fanar_model,
-        fanar_api_key=settings.fanar_api_key or "",
-        fanar_base_url=settings.fanar_base_url,
-        gemini_model=settings.gemini_model,
-        google_api_key=settings.google_api_key or "",
-        temperature=settings.llm_temperature,
-        max_tokens=settings.llm_max_tokens,
-    )
+    llm = LLMProviderFactory.create(settings).create_chat_model()
     app.state.llm = llm
     app.state.rag_chain = build_rag_chain(llm, settings.system_role)
     logger.info("[6/6] LLM and RAG chain ready.")
@@ -150,7 +121,6 @@ async def lifespan(app: FastAPI):
             all_chunks=app.state.all_chunks,
             embedding_model=st_model,
             qdrant_client=app.state.qdrant_client if app.state.category_collection_ready else None,
-            embedding_model_name=settings.embedding_model if app.state.category_collection_ready else "",
             category_collection_name=settings.category_collection_name,
             category_top_k=settings.category_top_k,
             k=settings.retriever_k,

@@ -54,13 +54,15 @@ def main() -> None:
     )
 
     # 3. Build category index
+    from app.providers import EmbeddingProviderFactory
     from app.services.category_retriever import build_category_index
+    embedding_model = EmbeddingProviderFactory.create(settings).load_sentence_transformer()
     build_category_index(
         client=client,
         collection_name=settings.category_collection_name,
         category_names=category_names,
         category_descriptions=descriptions,
-        model_name=settings.embedding_model,
+        embedding_model=embedding_model,
         embedding_dim=settings.embedding_dim,
     )
 
