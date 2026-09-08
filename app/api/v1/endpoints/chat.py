@@ -107,7 +107,7 @@ async def chat_endpoint(body: ChatRequest, request: Request) -> ChatResponse:
     docs = retrieval.flattened()[: body.top_k]
 
     try:
-        answer = await _generate_answer(state.llm, body.message, history, docs)
+        answer = await _generate_answer(state.response_llm, body.message, history, docs)
     except Exception as exc:
         logger.exception("LLM generation error: %s", exc)
         raise LLMError(str(exc)) from exc

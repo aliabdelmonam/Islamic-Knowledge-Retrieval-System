@@ -4,8 +4,10 @@ Falls back to original query if rewriting fails.
 """
 from __future__ import annotations
 
+from typing import Any
 import logging
 import re
+from app.providers import GenerationClient,Message,GenerationResponse
 
 logger = logging.getLogger(__name__)
 
@@ -21,28 +23,33 @@ Provide ONLY the rewritten question in MSA, nothing else.
 """
 
 
-def rewrite_query(question: str, groq_api_key: str, model: str = "llama-3.3-70b-versatile") -> str:
+def rewrite_query(query: str, llm: GenerationClient, temperature: float = 0.2, **kwargs: Any) -> str:
     """
-    Rewrite *question* from colloquial Arabic to MSA via Groq.
-    Returns the original question on any error.
+    Rewrite *query* from colloquial Arabic to MSA via Groq.
+    Returns the original query on any error.
     """
     try:
-        from groq import Groq
 
-        client = Groq(api_key=groq_api_key)
-        response = client.chat.completions.create(
-            model=model,
-            messages=[
-                {"role": "user", "content": _REWRITE_PROMPT.format(question=question)},
-            ],
-            temperature=0.1,
-            max_tokens=256,
+        messages = [
+            Message(role="user", content=_REWRITE_PROMPT.format(question=query))
+        ]
+        response = llm.generate(
+            messages=messages,
+            temperature=temperature,
+            output_schema=None,
+            **kwargs
         )
-        rewritten = response.choices[0].message.content or ""
-        rewritten = rewritten.strip().strip('"').strip("'")
+
+        rewritten = response.text.strip().strip('"').strip("'")
+
         if rewritten:
-            logger.info("Query rewritten: %r → %r", question, rewritten)
+            logger.info("Query rewritten: %r → %r", query, rewritten)
             return rewritten
+        else:
+            logger.warning("Query rewriting returned empty, using original query.")
+            return query
+
     except Exception as exc:
         logger.warning("Query rewriting failed (%s), using original query.", exc)
-    return question
+        return query
+

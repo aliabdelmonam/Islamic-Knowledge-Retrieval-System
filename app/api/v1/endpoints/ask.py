@@ -89,7 +89,7 @@ async def ask_endpoint(body: AskRequest, request: Request) -> AskResponse:
     docs = retrieval.flattened()[: body.top_k]
 
     try:
-        answer = await _generate_answer(state.llm, body.question, docs)
+        answer = await _generate_answer(state.response_llm, body.question, docs)
     except Exception as exc:
         logger.exception("LLM generation error: %s", exc)
         raise LLMError(str(exc)) from exc
