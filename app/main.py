@@ -27,42 +27,53 @@ async def lifespan(app: FastAPI):
     from app.providers import Provider, ProviderFactory
     from app.agents.triage_agent import IslamicCategory, TriageAgent
     from app.agents.retrieval_agent import RetrievalAgent
+    from app.agents.answer_agent import AnswerAgent
     from app.services.session_store import SessionStore
 
-    # 1. LLM client — shared by  final answer generation
-    response_llm = ProviderFactory.create(Provider.GEMINI, model=settings.response_llm)
-    app.state.response_llm = response_llm
-    logger.info("[1/4] LLM client ready (model=%s).", settings.response_llm)
-
-    # 1.1. LLM client — shared by triage classification and final answer generation
-    task_llm = ProviderFactory.create(Provider.GEMINI, model=settings.task_llm)
-    app.state.task_llm = task_llm
-    logger.info("[1/4] LLM client ready (model=%s).", settings.task_llm)
-    
+    # 1. LLM client — shared by triage classification, query rewrite,
+    #    sufficiency checks, and final answer generation
+    llm = ProviderFactory.create(Provider.GEMINI, model=settings.llm_model)
+    app.state.llm = llm
+    logger.info("[1/5] LLM client ready (model=%s).", settings.llm_model)
 
     # 2. Triage agent — routes each question to general_question / hadith / quran
     app.state.triage_agent = TriageAgent(
-        llm=app.state.task_llm,
+        llm=llm,
         temperature=settings.triage_temperature,
     )
-    logger.info("[2/4] Triage agent ready.")
+    logger.info("[2/5] Triage agent ready.")
 
     # 3. Retrieval agent — constructs all three retrievers:
     #      - GeneralQuestionRetriever (Qdrant, fatwa embeddings)
     #      - HadithRetriever (Whoosh index over the hadith CSV)
     #      - QuranRetriever (Whoosh index over the enriched Quran JSON)
     #    Each one loads/builds its index synchronously in __init__, so this
-    #    must happen once here at startup, never per-request.
+    #    must happen once here at startup, never per-request. AnswerAgent
+    #    below reuses these retriever instances directly as its "tools" —
+    #    RetrievalAgent.run() itself (parallel, all-at-once) is only used by
+    #    the plain /retrieve endpoint.
     app.state.retrieval_agent = RetrievalAgent(top_k=settings.retrieval_top_k)
     logger.info(
-        "[3/4] Retrieval agent ready (categories=%s).",
+        "[3/5] Retrieval agent ready (categories=%s).",
         [c.value for c in app.state.retrieval_agent.retrievers],
     )
 
-    # 4. Session store — backs the multi-turn /chat endpoint with rolling
+    # 4. Answer agent — the agentic layer used by /ask and /chat: upfront
+    #    query rewrite, triage, then a bounded tool-calling loop with an LLM
+    #    sufficiency check after each call, followed by grounded generation.
+    app.state.answer_agent = AnswerAgent(
+        llm=llm,
+        triage_agent=app.state.triage_agent,
+        retrieval_agent=app.state.retrieval_agent,
+        max_tool_calls=settings.agent_max_tool_calls,
+        top_k=settings.retrieval_top_k,
+    )
+    logger.info("[4/5] Answer agent ready (max_tool_calls=%d).", settings.agent_max_tool_calls)
+
+    # 5. Session store — backs the multi-turn /chat endpoint with rolling
     #    per-session conversation history.
     app.state.session_store = SessionStore()
-    logger.info("[4/4] Session store ready.")
+    logger.info("[5/5] Session store ready.")
 
     logger.info("=== Islamic Knowledge RAG API ready to serve requests ===")
     yield

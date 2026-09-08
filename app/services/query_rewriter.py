@@ -11,17 +11,29 @@ from app.providers import GenerationClient,Message,GenerationResponse
 
 logger = logging.getLogger(__name__)
 
-_REWRITE_PROMPT = """\
-You are an expert Arabic linguist specializing in Islamic texts.
-Your task is to rewrite the given Arabic question into formal Modern Standard Arabic (MSA),
-preserving the original meaning accurately. Remove any colloquial expressions,
-slang, or dialect-specific phrases while maintaining the semantic content.
+# _REWRITE_PROMPT = """\
+# You are an expert Arabic linguist specializing in Islamic texts.
+# Your task is to rewrite the given Arabic question into formal Modern Standard Arabic (MSA),
+# preserving the original meaning accurately. Remove any colloquial expressions,
+# slang, or dialect-specific phrases while maintaining the semantic content.
 
-Question: {question}
+# Question: {question}
 
-Provide ONLY the rewritten question in MSA, nothing else.
+# Provide ONLY the rewritten question in MSA, nothing else.
+# """
+
+_REWRITE_PROMPT="""\
+أنت أداة إعادة صياغة أسئلة ضمن نظام استرجاع معرفة إسلامي.
+مهمتك الوحيدة هي تحويل آخر رسالة من المستخدم إلى سؤال مستقل الفهم (self-contained) بالاعتماد
+على سياق المحادثة السابق، دون الإجابة عن السؤال نفسه.
+
+القواعد:
+- حلّ الإحالات الضمنية (هو، هي، ذلك، هذا الحكم، السؤال السابق...) بالرجوع إلى المحادثة السابقة.
+- لا تُضِف معلومات أو افتراضات غير موجودة في المحادثة.
+- إذا كانت رسالة المستخدم مستقلة الفهم أصلاً ولا تحتاج سياقًا، أعدها كما هي دون تغيير.
+- أخرج السؤال المعاد صياغته فقط، ضمن الحقل المطلوب، دون أي شرح أو مقدمات.
 """
-
+ 
 
 def rewrite_query(query: str, llm: GenerationClient, temperature: float = 0.2, **kwargs: Any) -> str:
     """

@@ -10,6 +10,9 @@ class AskResponse(BaseModel):
     categories: list[IslamicCategory] = Field(default_factory=list)
     chitchat_type: ChitchatType = ChitchatType.NONE
     needs_clarification: bool = False
+    resolved_query: str = ""
+    tool_calls_made: list[IslamicCategory] = Field(default_factory=list)
+    is_fallback: bool = False
     session_id: str
 
 
@@ -26,6 +29,9 @@ class ChatResponse(BaseModel):
     categories: list[IslamicCategory] = Field(default_factory=list)
     chitchat_type: ChitchatType = ChitchatType.NONE
     needs_clarification: bool = False
+    resolved_query: str = ""
+    tool_calls_made: list[IslamicCategory] = Field(default_factory=list)
+    is_fallback: bool = False
     session_id: str
 
 
