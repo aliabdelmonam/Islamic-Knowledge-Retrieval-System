@@ -29,14 +29,20 @@ async def lifespan(app: FastAPI):
     from app.agents.retrieval_agent import RetrievalAgent
     from app.services.session_store import SessionStore
 
-    # 1. LLM client — shared by triage classification and final answer generation
-    llm = ProviderFactory.create(Provider.GEMINI, model=settings.llm_model)
-    app.state.llm = llm
-    logger.info("[1/4] LLM client ready (model=%s).", settings.llm_model)
+    # 1. LLM client — shared by  final answer generation
+    response_llm = ProviderFactory.create(Provider.GEMINI, model=settings.response_llm)
+    app.state.response_llm = response_llm
+    logger.info("[1/4] LLM client ready (model=%s).", settings.response_llm)
+
+    # 1.1. LLM client — shared by triage classification and final answer generation
+    task_llm = ProviderFactory.create(Provider.GEMINI, model=settings.task_llm)
+    app.state.task_llm = task_llm
+    logger.info("[1/4] LLM client ready (model=%s).", settings.task_llm)
+    
 
     # 2. Triage agent — routes each question to general_question / hadith / quran
     app.state.triage_agent = TriageAgent(
-        llm=llm,
+        llm=app.state.task_llm,
         temperature=settings.triage_temperature,
     )
     logger.info("[2/4] Triage agent ready.")

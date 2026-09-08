@@ -175,7 +175,9 @@ def _llm_model(self) -> str:  # type: ignore[unused-def]
 
 
 # Attach property to Settings instance so `settings.llm_model` works
-setattr(Settings, "llm_model", _llm_model)
+setattr(Settings, "response_llm", _llm_model)
+
+setattr(Settings, "task_llm", _llm_model)
 
 # ── LangSmith/LangChain Environment Variable Forwarding ───────────────────────────
 if settings.langsmith_tracing:
