@@ -101,7 +101,7 @@ class Settings(BaseSettings):
     api_title: str = "Hadith RAG API"
     api_version: str = "1.0.0"
     debug: bool = False
-
+    TAVILY_API_KEY:str
     # ── Retrieveal ──────────────────────────────────────────────────────────────
     retrieval_top_k: int = 3
     quran_json_path: Path = Path(r"C:\Users\aliab\OneDrive\Desktop\quran\quran_enriched.json")

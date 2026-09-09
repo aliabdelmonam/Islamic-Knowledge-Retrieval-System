@@ -2,7 +2,7 @@
    Noor Al-Hidayah Javascript Application Logic
    ========================================================================== */
 
-const API_BASE_URL = "http://localhost:8000/api/v1";
+const API_BASE_URL = "http://localhost:8000/api/v1/ask";
 
 document.addEventListener("DOMContentLoaded", () => {
     // If the user reloaded the page, clear the session storage

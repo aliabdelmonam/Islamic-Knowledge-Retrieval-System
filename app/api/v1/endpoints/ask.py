@@ -1,4 +1,8 @@
-"""POST /api/v1/ask — triage -> multi-source retrieval (general/hadith/quran) -> LLM generation."""
+"""POST /api/v1/ask — triage -> multi-source retrieval (general/hadith/quran) -> LLM generation.
+
+Falls back to whitelist-restricted web search (SearchAgent) if the internal
+sources aren't enough to answer; see app.agents.helper.answer_generation.
+"""
 from __future__ import annotations
 
 import logging
@@ -6,10 +10,8 @@ import uuid
 
 from fastapi import APIRouter, Request
 
-from app.agents.retrieval_agent import RetrievedDocument
-from app.agents.helper.retrieval_agent_system_prompt import RETRIEVAL_SYSTEM_PROMPT
+from app.agents.helper.answer_generation import generate_answer
 from app.core.exceptions import LLMError, PipelineNotReadyError, RetrievalError
-from app.providers import Message
 from app.schemas.request import AskRequest
 from app.schemas.response import AskResponse
 
@@ -17,37 +19,10 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-def _build_context(docs: list[RetrievedDocument]) -> str:
-    blocks = []
-    for i, doc in enumerate(docs, 1):
-        ref = doc.source_ref or doc.metadata.get("title", "")
-        blocks.append(
-            f"[{i}] (الفئة: {doc.category.value}, المصدر: {ref})\n{doc.text}"
-        )
-    return "\n\n".join(blocks)
-
-
-async def _generate_answer(llm, question: str, docs: list[RetrievedDocument]) -> str:
-    if not docs:
-        return "لم أجد مصادر كافية للإجابة على هذا السؤال بدقة."
-
-    prompt = f"السؤال: {question}\n\nالمصادر:\n{_build_context(docs)}\n\nالإجابة:"
-
-    response = await llm.generate(
-        messages=[
-            Message(role="system", content=RETRIEVAL_SYSTEM_PROMPT),
-            Message(role="user", content=prompt),
-        ],
-        temperature=0.2,
-        max_tokens=800,
-    )
-    return response.text
-
-
 @router.post("/ask", response_model=AskResponse)
 async def ask_endpoint(body: AskRequest, request: Request) -> AskResponse:
     state = request.app.state
-    for attr in ("llm", "triage_agent", "retrieval_agent"):
+    for attr in ("response_llm","task_llm", "triage_agent", "retrieval_agent"):
         if getattr(state, attr, None) is None:
             raise PipelineNotReadyError(attr)
 
@@ -89,14 +64,19 @@ async def ask_endpoint(body: AskRequest, request: Request) -> AskResponse:
     docs = retrieval.flattened()[: body.top_k]
 
     try:
-        answer = await _generate_answer(state.response_llm, body.question, docs)
+        answer, used_sources = await generate_answer(
+            llm=state.response_llm,
+            search_agent=getattr(state, "search_agent", None),
+            query=body.question,
+            docs=docs,
+        )
     except Exception as exc:
         logger.exception("LLM generation error: %s", exc)
         raise LLMError(str(exc)) from exc
 
     return AskResponse(
         answer=answer,
-        sources=docs,
+        sources=used_sources,
         categories=triage.categories,
         chitchat_type=triage.chitchat_type,
         needs_clarification=False,
