@@ -111,10 +111,10 @@ class Settings(BaseSettings):
 
 
     # ── LangSmith ──────────────────────────────────────────────────────────────
-    langsmith_tracing: bool = True
-    langsmith_endpoint: str | None = None
-    langsmith_api_key: str | None = None
-    langsmith_project: str | None = None
+    LANGSMITH_TRACING: bool = True
+    LANGSMITH_ENDPOINT: str = "https://api.smith.langchain.com"
+    LANGSMITH_API_KEY: str | None = None
+    LANGSMITH_PROJECT: str | None = None
 
     # ── History ────────────────────────────────────────────────────────────────
     redis_url: str = "redis://localhost:6379/0"
@@ -180,15 +180,26 @@ setattr(Settings, "response_llm", _llm_model)
 setattr(Settings, "task_llm", _llm_model)
 
 # ── LangSmith/LangChain Environment Variable Forwarding ───────────────────────────
-if settings.langsmith_tracing:
+# ── LangSmith/LangChain Environment Variable Forwarding ───────────────────────────
+if settings.LANGSMITH_TRACING:
     import os
-    os.environ["LANGCHAIN_TRACING_V2"] = "true"
-    if settings.langsmith_project:
-        # Strip any quotes that might be present in the .env file
-        project_name = settings.langsmith_project.strip('"').strip("'")
-        os.environ["LANGCHAIN_PROJECT"] = project_name
-    if settings.langsmith_api_key:
-        os.environ["LANGCHAIN_API_KEY"] = settings.langsmith_api_key
-    if settings.langsmith_endpoint:
-        os.environ["LANGCHAIN_ENDPOINT"] = settings.langsmith_endpoint
 
+    if not settings.LANGSMITH_API_KEY or not settings.LANGSMITH_PROJECT:
+        raise RuntimeError(
+            "LANGSMITH_TRACING is enabled but LANGSMITH_API_KEY and/or "
+            "LANGSMITH_PROJECT is missing from your .env file."
+        )
+
+    project_name = settings.LANGSMITH_PROJECT.strip('"').strip("'")
+    api_key = settings.LANGSMITH_API_KEY.strip('"').strip("'")
+
+    os.environ["LANGSMITH_TRACING"] = "true"
+    os.environ["LANGSMITH_ENDPOINT"] = settings.LANGSMITH_ENDPOINT
+    os.environ["LANGSMITH_API_KEY"] = api_key
+    os.environ["LANGSMITH_PROJECT"] = project_name
+
+    # legacy aliases some langchain versions still read
+    os.environ["LANGCHAIN_TRACING_V2"] = "true"
+    os.environ["LANGCHAIN_ENDPOINT"] = settings.LANGSMITH_ENDPOINT
+    os.environ["LANGCHAIN_API_KEY"] = api_key
+    os.environ["LANGCHAIN_PROJECT"] = project_name

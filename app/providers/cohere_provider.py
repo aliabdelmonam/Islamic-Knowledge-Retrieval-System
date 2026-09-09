@@ -1,22 +1,24 @@
 # ---------------------------------------------------------------------------
-# Cohere
+# Cohere (via LangChain)
 # ---------------------------------------------------------------------------
 from .llm_interface import GenerationClient, GenerationResponse, Message, ProviderError, Provider
 from typing import Any, Optional
 from app.core import settings
 from pydantic import BaseModel
 
-class CohereClient(GenerationClient):
-    """Wraps Cohere's chat API (ClientV2 / async)."""
 
-    def __init__(self, model: str = "command-r-plus",  **kwargs):
+class CohereClient(GenerationClient):
+    """Wraps Cohere's chat API via LangChain's ChatCohere (so calls show up in LangSmith)."""
+
+    def __init__(self, model: str = "command-r-plus", **kwargs):
         api_key = settings.COHERE_API_KEY
         if not api_key:
             raise ValueError("COHERE_API_KEY not set and no api_key provided")
         super().__init__(model=model, api_key=api_key, **kwargs)
+        self.api_key = api_key  # base class doesn't store this itself
 
-        import cohere  # lazy import so unused providers don't require the dep
-        self._client = cohere.AsyncClientV2(api_key=api_key)
+        from langchain_cohere import ChatCohere  # lazy import
+        self._ChatCohere = ChatCohere
 
     @property
     def provider_name(self) -> str:
@@ -31,39 +33,52 @@ class CohereClient(GenerationClient):
         **kwargs: Any,
     ) -> GenerationResponse:
         try:
-            cohere_messages = [{"role": m.role, "content": m.content} for m in messages]
+            from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 
-            chat_kwargs = {
-            "model": self.model,
-            "messages": cohere_messages,
-            "temperature": temperature,
-            "max_tokens": max_tokens,
-            **kwargs,
-            }
+            lc_messages: list[Any] = []
+            for m in messages:
+                if m.role == "system":
+                    lc_messages.append(SystemMessage(content=m.content))
+                elif m.role == "user":
+                    lc_messages.append(HumanMessage(content=m.content))
+                else:
+                    lc_messages.append(AIMessage(content=m.content))
 
-            if output_schema is not None:
-                chat_kwargs["response_format"] = {
-                    "type": "json_object",
-                    "json_schema": output_schema,
-                }
-
-            resp = await self._client.chat(**chat_kwargs)
-            text = "".join(
-                block.text for block in resp.message.content if block.type == "text"
+            llm = self._ChatCohere(
+                model=self.model,
+                cohere_api_key=self.api_key,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                **kwargs,
             )
-            usage = {}
-            if resp.usage and resp.usage.billed_units:
-                usage = {
-                    "input_tokens": resp.usage.billed_units.input_tokens,
-                    "output_tokens": resp.usage.billed_units.output_tokens,
-                }
+
+            raw_ai_message = None
+            if output_schema is not None:
+                structured_llm = llm.with_structured_output(output_schema, include_raw=True)
+                result = await structured_llm.ainvoke(lc_messages)
+                raw_ai_message = result["raw"]
+                parsed = result["parsed"]
+                text = parsed.model_dump_json() if isinstance(parsed, BaseModel) else str(parsed)
+            else:
+                raw_ai_message = await llm.ainvoke(lc_messages)
+                text = raw_ai_message.content
+
+            usage_meta = getattr(raw_ai_message, "usage_metadata", None) or {}
+            usage = {
+                "input_tokens": usage_meta.get("input_tokens"),
+                "output_tokens": usage_meta.get("output_tokens"),
+            } if usage_meta else {}
+
+            response_metadata = getattr(raw_ai_message, "response_metadata", None) or {}
+            finish_reason = response_metadata.get("finish_reason")
+
             return GenerationResponse(
                 text=text,
                 provider=self.provider_name,
                 model=self.model,
-                raw=resp,
+                raw=raw_ai_message,
                 usage=usage,
-                finish_reason=resp.finish_reason,
+                finish_reason=finish_reason,
             )
         except Exception as e:
             raise ProviderError(self.provider_name, e) from e

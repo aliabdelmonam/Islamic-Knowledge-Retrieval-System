@@ -1,13 +1,14 @@
-"""Hugging Face embedding provider interface and factory."""
+"""Hugging Face embedding provider interface and factory (via LangChain)."""
 from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
-from typing import  Any,List, Union
+from typing import Any, List, Union
 
 from app.core.config import Settings
-from sentence_transformers import SentenceTransformer
+
 logger = logging.getLogger(__name__)
+
 
 class EmbeddingProvider(ABC):
     """Common contract for embedding providers."""
@@ -18,7 +19,10 @@ class EmbeddingProvider(ABC):
 
 
 class HuggingFaceEmbeddingProvider(EmbeddingProvider):
-    """Load cached Hugging Face models, downloading them on first use."""
+    """Load cached Hugging Face models, downloading them on first use.
+    Uses LangChain's HuggingFaceEmbeddings under the hood so this provider
+    can be dropped directly into LangChain retrievers/vectorstores as well."""
+
     def __init__(self, settings: "Settings") -> None:
         print("Initializing HuggingFaceEmbeddingProvider")
         self.settings = settings
@@ -31,37 +35,32 @@ class HuggingFaceEmbeddingProvider(EmbeddingProvider):
         import torch
 
         return "cuda" if torch.cuda.is_available() else "cpu"
-    
-    def _load_model(self) ->SentenceTransformer:
-        device = self._device()
-        
-        logger.info(
-                "Loading embedding model %s on %s",
-                self.settings.embedding_model,
-                device,
-            )
-        
-        # model = SentenceTransformer(
-        #     self.settings.embedding_model,
-        #     device=device,
-        #     force_download=True,
-        #     cache_folder=(
-        #         str(self.settings.huggingface_cache_dir)
-        #         if self.settings.huggingface_cache_dir
-        #         else None
-        #     ),
-            
-# )
-        from sentence_transformers import SentenceTransformer
 
-        model = SentenceTransformer(
-            "Omartificial-Intelligence-Space/Arabic-Triplet-Matryoshka-V2",
+    def _load_model(self):
+        device = self._device()
+
+        logger.info(
+            "Loading embedding model %s on %s",
+            self.settings.embedding_model,
+            device,
+        )
+
+        from langchain_huggingface import HuggingFaceEmbeddings
+
+        # model_kwargs/encode_kwargs map onto the same SentenceTransformer(...)
+        # constructor args and .encode(...) call args as before.
+        model = HuggingFaceEmbeddings(
+            model_name="Omartificial-Intelligence-Space/Arabic-Triplet-Matryoshka-V2",
+            model_kwargs={"device": device},
+            encode_kwargs={
+                "batch_size": self.settings.embedding_batch_size,
+                "normalize_embeddings": True,
+            },
             # cache_folder=(
             #     str(self.settings.huggingface_cache_dir)
             #     if self.settings.huggingface_cache_dir
             #     else None
             # ),
-
         )
         return model
 
@@ -69,14 +68,10 @@ class HuggingFaceEmbeddingProvider(EmbeddingProvider):
         if isinstance(texts, str):
             texts = [texts]
 
-        embeddings = self.model.encode(
-            texts,
-            batch_size=self.settings.embedding_batch_size,
-            normalize_embeddings=True,
-            convert_to_numpy=True,
-        )
-
-        return embeddings.tolist()
+        # HuggingFaceEmbeddings.embed_documents already returns list[list[float]],
+        # normalized per encode_kwargs above — same output shape as
+        # `self.model.encode(...).tolist()` did previously.
+        return self.model.embed_documents(texts)
 
 
 class EmbeddingProviderFactory:
