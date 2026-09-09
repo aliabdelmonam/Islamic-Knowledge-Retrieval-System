@@ -69,7 +69,13 @@ async def _call_llm(
         temperature=0.2,
         max_tokens=800,
     )
-    return response.text
+    text = response.text
+    if isinstance(text, list):
+        text = "".join(
+            b.get("text", "") if isinstance(b, dict) else str(b)
+            for b in text
+        )
+    return text
 
 
 async def generate_answer(

@@ -6,6 +6,21 @@ from typing import Any
 from app.core import settings
 from pydantic import BaseModel
 
+def _extract_text(content: Any) -> str:
+    """AIMessage.content can be a plain string or a list of content
+    blocks (e.g. [{"type": "text", "text": "..."}]) depending on the
+    provider/model. Normalize to a plain string."""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for block in content:
+            if isinstance(block, str):
+                parts.append(block)
+            elif isinstance(block, dict) and block.get("type") == "text":
+                parts.append(block.get("text", ""))
+        return "".join(parts)
+    return str(content)
 
 class GeminiClient(GenerationClient):
     """Wraps Google Gemini via LangChain's ChatGoogleGenerativeAI (so calls show up in LangSmith)."""
@@ -70,7 +85,7 @@ class GeminiClient(GenerationClient):
                 text = parsed.model_dump_json() if isinstance(parsed, BaseModel) else str(parsed)
             else:
                 raw_ai_message = await llm.ainvoke(lc_messages)
-                text = raw_ai_message.content
+                text = _extract_text(raw_ai_message.content)
 
             usage_meta = getattr(raw_ai_message, "usage_metadata", None) or {}
             usage = {
