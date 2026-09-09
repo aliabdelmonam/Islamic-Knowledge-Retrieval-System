@@ -2,7 +2,7 @@
    Noor Al-Hidayah Javascript Application Logic
    ========================================================================== */
 
-const API_BASE_URL = "http://localhost:8000/api/v1/ask";
+const API_BASE_URL = "http://localhost:8000/api/v1";
 
 document.addEventListener("DOMContentLoaded", () => {
     // If the user reloaded the page, clear the session storage
@@ -307,7 +307,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const res = await fetch(`${API_BASE_URL}/retrieve`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ query: text, k: 5 })
+                    body: JSON.stringify({ query: text, top_k: 5 })
                 });
 
                 if (!res.ok) throw new Error("HTTP error " + res.status);
@@ -318,7 +318,7 @@ document.addEventListener("DOMContentLoaded", () => {
             } else {
                 // Fetch session_id from sessionStorage if exists
                 let sessionId = sessionStorage.getItem("noor-session-id");
-                let body = { question: text, k: 5, rewrite: true };
+                let body = { question: text, top_k: 5 };
                 if (sessionId) {
                     body.session_id = sessionId;
                 }
