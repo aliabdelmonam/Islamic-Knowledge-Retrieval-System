@@ -14,6 +14,7 @@ from app.core.exceptions import LLMError, PipelineNotReadyError, RetrievalError
 from app.providers import Message
 from app.schemas.request import ChatRequest
 from app.schemas.response import ChatResponse
+from app.services.query_rewriter import rewrite_query
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -27,10 +28,14 @@ async def chat_endpoint(body: ChatRequest, request: Request) -> ChatResponse:
             raise PipelineNotReadyError(attr)
 
     session_id = body.session_id or state.session_store.new_session_id()
-    history = await state.session_store.get_last_k(session_id, k=10)
+    short_history = await state.session_store.get_last_k(session_id, k=2)
+    long_history = await state.session_store.get_last_k(session_id, k=4)
 
     try:
-        triage = await state.triage_agent.classify(body.message, conversation_history=history)
+        # Query Re-write first
+        new_query = await rewrite_query(query = body.message, llm = state.task_llm, temperature=0.2, history=short_history)
+
+        triage = await state.triage_agent.classify(new_query, conversation_history=[])
     except Exception as exc:
         logger.exception("Triage error: %s", exc)
         raise LLMError(str(exc)) from exc
@@ -84,7 +89,7 @@ async def chat_endpoint(body: ChatRequest, request: Request) -> ChatResponse:
             search_agent=getattr(state, "search_agent", None),
             query=body.message,
             docs=docs,
-            history=history,
+            history=long_history,
         )
     except Exception as exc:
         logger.exception("LLM generation error: %s", exc)
