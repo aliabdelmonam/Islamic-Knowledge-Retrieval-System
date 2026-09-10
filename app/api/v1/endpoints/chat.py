@@ -87,7 +87,7 @@ async def chat_endpoint(body: ChatRequest, request: Request) -> ChatResponse:
         answer, used_sources = await generate_answer(
             llm=state.response_llm,
             search_agent=getattr(state, "search_agent", None),
-            query=body.message,
+            query=new_query,
             docs=docs,
             history=long_history,
         )
@@ -97,7 +97,7 @@ async def chat_endpoint(body: ChatRequest, request: Request) -> ChatResponse:
 
     await state.session_store.append_turn(
     session_id=session_id,
-    user_message=Message(role="user", content=body.question),
+    user_message=Message(role="user", content=body.message),
     assistant_message=Message(role="assistant", content=answer),
 )
 

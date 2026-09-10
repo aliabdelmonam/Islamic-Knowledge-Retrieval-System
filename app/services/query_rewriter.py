@@ -73,7 +73,7 @@ def _format_history(history: list[Message]) -> str:
 async def rewrite_query(query: str,
                    llm: GenerationClient,
                     temperature: float = 0.2,
-                    history: Optional[list[Message]] = None,,
+                    history: Optional[list[Message]] = None,
                     **kwargs: Any) -> str:
     """
     Rewrite *query* from colloquial Arabic to MSA via Groq.

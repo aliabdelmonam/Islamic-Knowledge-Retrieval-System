@@ -6,11 +6,11 @@ const API_BASE_URL = "http://localhost:8000/api/v1";
 
 document.addEventListener("DOMContentLoaded", () => {
     // If the user reloaded the page, clear the session storage
-    const navEntry = performance.getEntriesByType('navigation')[0];
-    if (navEntry && navEntry.type === 'reload') {
-        sessionStorage.removeItem('noor-session-id');
-        console.log('Session ID cleared on reload.');
-    }
+    // const navEntry = performance.getEntriesByType('navigation')[0];
+    // if (navEntry && navEntry.type === 'reload') {
+        // sessionStorage.removeItem('noor-session-id');
+        // console.log('Session ID cleared on reload.');
+    // }
 
     // DOM Elements
     const chatForm = document.getElementById("chatForm");
@@ -318,13 +318,13 @@ document.addEventListener("DOMContentLoaded", () => {
             } else {
                 // Fetch session_id from sessionStorage if exists
                 let sessionId = sessionStorage.getItem("noor-session-id");
-                let body = { question: text, top_k: 5 };
+                let body = { message: text, top_k: 5 };
                 if (sessionId) {
                     body.session_id = sessionId;
                 }
 
-                // Call /ask endpoint
-                const res = await fetch(`${API_BASE_URL}/ask`, {
+                // Call /chat endpoint
+                const res = await fetch(`${API_BASE_URL}/chat`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(body)
