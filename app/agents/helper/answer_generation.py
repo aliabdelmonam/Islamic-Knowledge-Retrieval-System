@@ -67,7 +67,7 @@ async def _call_llm(
             Message(role="user", content=prompt),
         ],
         temperature=0.2,
-        max_tokens=800,
+        max_tokens=12000,
     )
     text = response.text
     if isinstance(text, list):
