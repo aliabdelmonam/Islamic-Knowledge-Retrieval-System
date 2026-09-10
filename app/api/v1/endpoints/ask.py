@@ -14,6 +14,7 @@ from app.agents.helper.answer_generation import generate_answer
 from app.core.exceptions import LLMError, PipelineNotReadyError, RetrievalError
 from app.schemas.request import AskRequest
 from app.schemas.response import AskResponse
+from app.providers import Message
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -63,13 +64,18 @@ async def ask_endpoint(body: AskRequest, request: Request) -> AskResponse:
 
     docs = retrieval.flattened()[: body.top_k]
 
+    # history = await state.session_store.get_last_k(session_id, k=5)
     try:
         answer, used_sources = await generate_answer(
             llm=state.response_llm,
             search_agent=getattr(state, "search_agent", None),
             query=body.question,
             docs=docs,
+            # history=history
         )
+        # await state.session_store.append_turn(session_id = session_id,
+                                            #    user_message=Message(role="user", content=body.question),
+                                            #    assistant_message=Message(role="assistant", content=answer))
     except Exception as exc:
         logger.exception("LLM generation error: %s", exc)
         raise LLMError(str(exc)) from exc

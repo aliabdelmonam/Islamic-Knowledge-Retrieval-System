@@ -61,7 +61,7 @@ async def lifespan(app: FastAPI):
 
     # 4. Session store — backs the multi-turn /chat endpoint with rolling
     #    per-session conversation history.
-    app.state.session_store = SessionStore()
+    app.state.session_store = SessionStore(max_messages=100,ttl_seconds=60 * 60 * 2)
     logger.info("[4/4] Session store ready.")
 
     logger.info("=== Islamic Knowledge RAG API ready to serve requests ===")

@@ -27,7 +27,7 @@ async def chat_endpoint(body: ChatRequest, request: Request) -> ChatResponse:
             raise PipelineNotReadyError(attr)
 
     session_id = body.session_id or state.session_store.new_session_id()
-    history = await state.session_store.get_history(session_id)
+    history = await state.session_store.get_last_k(session_id, k=10)
 
     try:
         triage = await state.triage_agent.classify(body.message, conversation_history=history)
@@ -91,10 +91,10 @@ async def chat_endpoint(body: ChatRequest, request: Request) -> ChatResponse:
         raise LLMError(str(exc)) from exc
 
     await state.session_store.append_turn(
-        session_id,
-        Message(role="user", content=body.message),
-        Message(role="assistant", content=answer),
-    )
+    session_id=session_id,
+    user_message=Message(role="user", content=body.question),
+    assistant_message=Message(role="assistant", content=answer),
+)
 
     return ChatResponse(
         answer=answer,
