@@ -3,6 +3,10 @@
 Falls back to whitelist-restricted web search (SearchAgent) if the internal
 sources aren't enough to answer; see app.agents.helper.answer_generation.
 """
+
+"""
+Ask just handle single quesiton not multiple question within the same prompt
+"""
 from __future__ import annotations
 
 import logging
