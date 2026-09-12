@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from app.agents.helper.general_knowledge_retrieval import create_retriever
 from app.agents.helper.hadith_retrieval import create_hadith_retriever
 from app.agents.helper.quran_retreival import create_quran_retriever
-from app.agents.triage_agent import IslamicCategory
+from app.agents.triage_agent import IslamicCategory, TriageResult
 
 from app.core import get_logger
 
@@ -325,6 +325,41 @@ class RetrievalAgent:
             query=query,
             results_by_category=dict(zip(categories, results)),
         )
+    
+    async def retrieve_all(
+        self,
+        questions: list[str],
+        triage_results: list[TriageResult],
+    ) -> list[list[RetrievedDocument]]:
+        """
+        Run retrieval for each question in parallel. Returns one docs list
+        per question, in the same order as *questions*. Questions that are
+        chitchat, non-Islamic, or need clarification get an empty docs list
+        without calling retrieval at all.
+        """
+        async def _retrieve_one(q: str, triage_q: TriageResult) -> list[RetrievedDocument]:
+            if triage_q.is_non_islamic or not triage_q.has_actionable_request or triage_q.needs_clarification:
+                logger.debug("Skipping retrieval for sub-question (non-actionable): %r", q)
+                return []
+            try:
+                retrieval = await self.run(q, triage_q)
+                return retrieval.flattened()[: self.top_k]
+            except Exception:
+                logger.exception("Retrieval failed for sub-question: %r", q)
+                return []
+
+        logger.info(f"RetrievalAgent.retrieve_all started (num_questions={len(questions)})")
+        start = time.perf_counter()
+
+        results = await asyncio.gather(*[
+            _retrieve_one(q, t) for q, t in zip(questions, triage_results)
+        ])
+
+        logger.info(
+            f"RetrievalAgent.retrieve_all completed (elapsed={time.perf_counter() - start:.2f}s, "
+            f"total_docs={sum(len(docs) for docs in results)})"
+        )
+        return results
 
 
 async def example():
@@ -335,23 +370,36 @@ async def example():
     query = "ما هي اركان الوضوء"
 
     triage_agent = TriageAgent(llm=ProviderFactory.create(Provider.GEMINI, model="gemini-3.1-flash-lite"))
-    triage = await triage_agent.classify(query)
+    # triage = await triage_agent.classify(query)
+    questions = [
+            "ما حكم الربا؟",
+            "هل يجوز أكل لحم الأرنب؟",
+            "شكرًا جزيلاً",
+            "من فاز بكأس العالم2026 ؟"
+        ]
+    batch_results = await triage_agent.classify_batch(questions)
+    docs_per_question = await retrieval_agent.retrieve_all(questions, batch_results)
+    
+    total_docs = 0
+    for question, docs in zip(questions, docs_per_question):
+        print(f"\nQ: {question}  ->  {len(docs)} document(s)")
 
-    response = await retrieval_agent.run(query, triage)
-    docs = response.flattened()
+        if not docs:
+            print("  (no retrieval — chitchat / non-actionable / needs clarification)")
+            continue
 
-    if not docs:
-        print("No results found.")
-        return
+        for doc in docs:
+            total_docs += 1
+            print(f"  ID: {doc.id}")
+            print(f"  Category: {doc.category.value}")
+            print(f"  Score: {doc.score:.4f}")
+            print(f"  Source: {doc.source_ref}")
+            print(f"  Text: {doc.text[:200]}{'…' if len(doc.text) > 200 else ''}")
+            print(f"  Metadata keys: {list(doc.metadata.keys())}")
+            print("  " + "-" * 38)
 
-    for doc in docs:
-        print(f"ID: {doc.id}")
-        print(f"Category: {doc.category.value}")
-        print(f"Score: {doc.score}")
-        print(f"Source: {doc.source_ref}")
-        print(f"Text: {doc.text}")
-        print(f"Metadata: {doc.metadata}")
-        print("-" * 40)
+    if total_docs == 0:
+        print("\nNo results found for any question.")
 
 
 if __name__ == "__main__":

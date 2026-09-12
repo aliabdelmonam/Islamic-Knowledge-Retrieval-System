@@ -137,3 +137,21 @@ async def rewrite_query(
     except Exception as exc:
         logger.warning("Query rewriting failed (%s), using original query.", exc)
         return [query]
+
+
+# ---------------------------------------------------------------------------
+# Example usage
+# ---------------------------------------------------------------------------
+
+async def _example():
+    from app.providers import ProviderFactory, Provider
+
+    llm = ProviderFactory.create(Provider.GEMINI, model="gemini-3.1-flash-lite")
+
+    query = "ما حكم الربا؟ وهل يجوز أكل لحم الأرنب؟"
+    rewritten = await rewrite_query(query, llm)
+    print(rewritten)
+
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(_example())
