@@ -33,18 +33,25 @@ _CANNED_RESPONSES: dict[ChitchatType, str] = {
 }
 _DEFAULT_CANNED_RESPONSE = "كيف يمكنني مساعدتك اليوم؟"
 
+# Shown when a question is understandable and actionable, but entirely
+# outside the Islamic-knowledge domain this system serves (e.g. general
+# trivia, coding help, weather, sports) — distinct from chitchat, which is
+# conversational framing (greetings/thanks) rather than an off-topic request.
+_NON_ISLAMIC_RESPONSE = (
+    "أعتذر، أنا مساعد متخصص في الإجابة عن الأسئلة الشرعية والإسلامية فقط "
+    "(مثل الفقه، الحديث، القرآن والتفسير). لا يمكنني مساعدتك في هذا السؤال، "
+    "لكن يسعدني الإجابة عن أي سؤال شرعي لديك."
+)
+
 
 # ---------------------------------------------------------------------------
 # Islamic knowledge domain categories
 # ---------------------------------------------------------------------------
-# Multi-label: a single question can legitimately touch more than one
-# category at once (e.g. a fatwa question that cites a hadith, or a question
-# asking for a Quranic ruling that also needs general fiqh context).
 
 class IslamicCategory(str, Enum):
-    GENERAL_QUESTION = "general_question"  # general fiqh/fatwa, not tied to a specific hadith or ayah
-    HADITH = "hadith"                      # question is about, or requires, hadith retrieval
-    QURAN = "quran"                        # question is about, or requires, Quranic verses/tafsir
+    GENERAL_QUESTION = "general_question"
+    HADITH = "hadith"
+    QURAN = "quran"
 
 
 CATEGORY_DESCRIPTIONS: dict[IslamicCategory, str] = {
@@ -62,7 +69,7 @@ CATEGORY_DESCRIPTIONS: dict[IslamicCategory, str] = {
 
 
 # ---------------------------------------------------------------------------
-# Combined structured output
+# Combined structured output — single-question result
 # ---------------------------------------------------------------------------
 
 class TriageResult(BaseModel):
@@ -70,29 +77,58 @@ class TriageResult(BaseModel):
 
     has_actionable_request: bool = Field(
         description="True if the message contains a real Islamic-knowledge question, "
-                     "even alongside a greeting/thanks/farewell.",
+                     "even alongside a greeting/thanks/farewell. Must be False when "
+                     "is_non_islamic is True.",
+    )
+    is_non_islamic: bool = Field(
+        default=False,
+        description="True if the message is a clear, understandable request/question "
+                     "that has nothing to do with Islamic knowledge (e.g. general trivia, "
+                     "coding help, weather, sports, other religions' unrelated topics). "
+                     "This is distinct from chitchat_type — chitchat is conversational "
+                     "framing (greeting/thanks/farewell), not an off-topic request.",
     )
     chitchat_type: ChitchatType = Field(
         description="The greeting/farewell/thanks/small_talk framing present, if any. "
-                     "'none' if has_actionable_request is true with no chitchat framing.",
+                     "'none' if has_actionable_request is true with no chitchat framing, "
+                     "or if is_non_islamic is true.",
     )
-
     categories: list[IslamicCategory] = Field(
         default_factory=list,
         description="All categories that apply to the question. Not mutually exclusive — "
                      "a question can be tagged with more than one category "
-                     "(e.g. ['hadith', 'general_question']).",
+                     "(e.g. ['hadith', 'general_question']). Must be empty when "
+                     "is_non_islamic is True.",
     )
     confidence: float = Field(ge=0.0, le=1.0)
     reasoning: str = Field(min_length=1, max_length=500)
     needs_clarification: bool = Field(
-        description="True when there's an actionable request but it's too ambiguous "
-                     "to reliably route to a category.",
+        description="True when there's an actionable Islamic-knowledge request but it's "
+                     "too ambiguous to reliably route to a category. Must be False when "
+                     "is_non_islamic is True.",
     )
 
     @model_validator(mode="after")
     def validate_consistency(self) -> "TriageResult":
-        if not self.has_actionable_request:
+        if self.is_non_islamic:
+            if self.has_actionable_request:
+                logger.warning(
+                    "TriageResult inconsistency: is_non_islamic=True but "
+                    "has_actionable_request=True"
+                )
+                raise ValueError("has_actionable_request must be False when is_non_islamic is True")
+            if self.categories:
+                logger.warning(
+                    f"TriageResult inconsistency: categories={[c.value for c in self.categories]} "
+                    f"present but is_non_islamic=True"
+                )
+                raise ValueError("categories must be empty when is_non_islamic is True")
+            if self.needs_clarification:
+                logger.warning(
+                    "TriageResult inconsistency: is_non_islamic=True but needs_clarification=True"
+                )
+                raise ValueError("needs_clarification must be False when is_non_islamic is True")
+        elif not self.has_actionable_request:
             if self.categories:
                 logger.warning(
                     f"TriageResult inconsistency: categories={[c.value for c in self.categories]} "
@@ -117,6 +153,9 @@ class TriageResult(BaseModel):
 
     def canned_response(self, *, active_ticket: bool = False, pending_question: Optional[str] = None) -> str:
         """Only meaningful when has_actionable_request is False."""
+        if self.is_non_islamic:
+            logger.debug("Building non-Islamic redirect response")
+            return _NON_ISLAMIC_RESPONSE
         base = _CANNED_RESPONSES.get(self.chitchat_type, _DEFAULT_CANNED_RESPONSE)
         logger.debug(
             f"Building canned response (chitchat_type={self.chitchat_type.value}, "
@@ -125,6 +164,81 @@ class TriageResult(BaseModel):
         if active_ticket and pending_question:
             return f"{base} {pending_question}"
         return base
+
+
+# ---------------------------------------------------------------------------
+# Batch structured output — one call, many questions
+# ---------------------------------------------------------------------------
+
+class TriageBatchItem(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    question: str = Field(
+        description="The exact question text this classification result applies to, "
+                     "copied verbatim from the numbered input list.",
+    )
+    has_actionable_request: bool
+    is_non_islamic: bool = False
+    chitchat_type: ChitchatType
+    categories: list[IslamicCategory] = Field(default_factory=list)
+    confidence: float = Field(ge=0.0, le=1.0)
+    reasoning: str = Field(min_length=1, max_length=500)
+    needs_clarification: bool
+
+    @model_validator(mode="after")
+    def validate_consistency(self) -> "TriageBatchItem":
+        if self.is_non_islamic:
+            if self.has_actionable_request:
+                raise ValueError("has_actionable_request must be False when is_non_islamic is True")
+            if self.categories:
+                raise ValueError("categories must be empty when is_non_islamic is True")
+            if self.needs_clarification:
+                raise ValueError("needs_clarification must be False when is_non_islamic is True")
+        elif not self.has_actionable_request:
+            if self.categories:
+                raise ValueError("categories must be empty when there is no actionable request")
+        elif not self.needs_clarification:
+            if not self.categories:
+                raise ValueError(
+                    "an actionable, non-clarification result requires at least one category"
+                )
+        if len(self.categories) != len(set(self.categories)):
+            raise ValueError("categories must not contain duplicates")
+        return self
+
+    def to_triage_result(self) -> TriageResult:
+        """Drop the `question` field to reuse everything built on TriageResult
+        (canned_response, downstream type checks) unchanged."""
+        return TriageResult(
+            has_actionable_request=self.has_actionable_request,
+            is_non_islamic=self.is_non_islamic,
+            chitchat_type=self.chitchat_type,
+            categories=self.categories,
+            confidence=self.confidence,
+            reasoning=self.reasoning,
+            needs_clarification=self.needs_clarification,
+        )
+
+
+class BatchTriageResult(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    results: list[TriageBatchItem] = Field(min_length=1)
+
+
+_BATCH_TRIAGE_INSTRUCTIONS = """\
+سيتم تزويدك بعدة أسئلة مرقمة. صنّف كل سؤال على حدة بشكل مستقل تمامًا عن
+الأسئلة الأخرى، وأعد نتيجة تصنيف واحدة لكل سؤال، بنفس ترتيب الأسئلة أدناه.
+انسخ نص كل سؤال حرفيًا في حقل "question" الخاص به حتى يمكن مطابقة النتائج
+بالأسئلة الأصلية. لا تدمج أو تخلط بين الأسئلة عند التصنيف.
+
+تذكّر: إذا كان أحد الأسئلة لا علاقة له إطلاقًا بالمجال الإسلامي (مثل أسئلة
+عامة، برمجة، طقس، رياضة)، ضع is_non_islamic=true لذلك السؤال تحديدًا، بغض
+النظر عن تصنيف باقي الأسئلة في نفس الدفعة.
+
+الأسئلة:
+{numbered_questions}
+"""
 
 
 # ---------------------------------------------------------------------------
@@ -178,6 +292,7 @@ class TriageAgent:
             )
             return TriageResult(
                 has_actionable_request=False,
+                is_non_islamic=False,
                 chitchat_type=ChitchatType.NONE,
                 categories=[],
                 confidence=0.0,
@@ -214,6 +329,7 @@ class TriageAgent:
         logger.debug(f"Raw LLM triage response: {response.text!r}")
 
         try:
+            logger.debug("Raw batch response: %r", response)
             result = TriageResult.model_validate_json(response.text)
         except ValidationError:
             logger.error(
@@ -225,6 +341,7 @@ class TriageAgent:
         logger.info(
             f"Triage completed (elapsed={elapsed:.2f}s) -> "
             f"actionable={result.has_actionable_request}, "
+            f"is_non_islamic={result.is_non_islamic}, "
             f"chitchat_type={result.chitchat_type.value}, "
             f"categories={[c.value for c in result.categories]}, "
             f"confidence={result.confidence:.2f}, "
@@ -234,12 +351,83 @@ class TriageAgent:
 
         return result
 
+    async def classify_batch(
+        self,
+        questions: list[str],
+        conversation_history: Optional[list[Message]] = None,
+    ) -> list[TriageResult]:
+        """
+        Classify multiple independent questions in a single LLM call.
+        Returns one TriageResult per input question, in the same order as
+        *questions*. Falls back to sequential single-question `classify()`
+        calls if the batch call fails validation or the model doesn't
+        return a result for every question.
+        """
+        questions = [q.strip() for q in questions if q and q.strip()]
+
+        if not questions:
+            logger.warning("classify_batch called with no non-empty questions.")
+            return []
+
+        if len(questions) == 1:
+            return [await self.classify(questions[0], conversation_history)]
+
+        logger.info(f"Triage classify_batch started (num_questions={len(questions)})")
+
+        numbered = "\n".join(f"{i}. {q}" for i, q in enumerate(questions, 1))
+        batch_prompt = _BATCH_TRIAGE_INSTRUCTIONS.format(numbered_questions=numbered)
+
+        start = time.perf_counter()
+        try:
+            response = await self.llm.generate(
+                messages=self._messages(batch_prompt, conversation_history),
+                temperature=self.temperature,
+                max_tokens=self.max_tokens * len(questions),
+                output_schema=BatchTriageResult,
+            )
+            # print("*"*50)
+            # print(f"Batch response:\n{response}")
+            batch_result = BatchTriageResult.model_validate_json(response.text)
+            # print("*"*50)
+            # print(f"Batch result:\n{batch_result}")
+            if len(batch_result.results) != len(questions):
+                raise ValueError(
+                    f"Expected {len(questions)} results, got {len(batch_result.results)}"
+                )
+
+            # by_question = {item.question.strip(): item for item in batch_result.results}
+            ordered: list[TriageResult] = []
+            # if len(batch_result.results) != len(questions):
+            #     raise ValueError(
+            #         f"Expected {len(questions)} results, got {len(batch_result.results)}"
+            #     )
+            ordered = [item.to_triage_result() for item in batch_result.results]
+
+            elapsed = time.perf_counter() - start
+            logger.info(
+                f"Triage classify_batch completed (elapsed={elapsed:.2f}s, "
+                f"num_questions={len(questions)})"
+            )
+            return ordered
+
+        except Exception as exc:
+            logger.warning(
+                f"Batch triage failed ({exc!r}), falling back to sequential "
+                f"single-question classification for {len(questions)} questions."
+            )
+            return [
+                await self.classify(q, conversation_history)
+                for q in questions
+            ]
+
 
 __all__ = [
     "CATEGORY_DESCRIPTIONS",
     "ChitchatType",
     "IslamicCategory",
     "TriageResult",
+    "TriageBatchItem",
+    "BatchTriageResult",
     "TriageAgent",
 ]
 
@@ -254,23 +442,34 @@ async def _example():
     llm = ProviderFactory.create(Provider.GEMINI, model="gemini-3.1-flash-lite")
     agent = TriageAgent(llm=llm)
 
-    examples = [
-        "السلام عليكم",
-        "ما حكم الجمع بين الصلاتين في السفر؟",
-        "ما صحة حديث: إنما الأعمال بالنيات؟",
-        "ما تفسير آية الكرسي؟",
-        "هل حديث كذا يفسر معنى آية كذا؟",  # multi-label: hadith + quran
+    # examples = [
+        # "من فاز بكأس العالم2026 ؟",       # non-Islamic
+    # ]
+
+    # for msg in examples:
+        # result = await agent.classify(msg)
+        # if result.is_non_islamic:
+            # print(f"{msg!r} -> non-Islamic: {result.canned_response()!r}")
+        # elif not result.has_actionable_request:
+            # print(f"{msg!r} -> chitchat ({result.chitchat_type.value}): {result.canned_response()!r}")
+        # else:
+            # print(f"{msg!r} -> categories={[c.value for c in result.categories]} "
+                #   f"confidence={result.confidence} needs_clarification={result.needs_clarification}")
+    # print("="*100)
+    batch_results = await agent.classify_batch([
+        "ما حكم الربا؟",
+        "هل يجوز أكل لحم الأرنب؟",
         "شكرًا جزيلاً",
-    ]
-
-    for msg in examples:
-        result = await agent.classify(msg)
-        if not result.has_actionable_request:
-            print(f"{msg!r} -> chitchat ({result.chitchat_type.value}): {result.canned_response()!r}")
+        "من فاز بكأس العالم2026 ؟"
+    ])
+    for q, r in zip(
+        ["ما حكم الربا؟", "هل يجوز أكل لحم الأرنب؟", "شكرًا جزيلاً", "من فاز بكأس العالم2026 ؟"],
+        batch_results,
+    ):
+        if not r.has_actionable_request:
+            print(f"{q!r} -> chitchat ({r.chitchat_type.value})")
         else:
-            print(f"{msg!r} -> categories={[c.value for c in result.categories]} "
-                  f"confidence={result.confidence} needs_clarification={result.needs_clarification}")
-
+            print(f"{q!r} -> categories={[c.value for c in r.categories]}")
 
 if __name__ == "__main__":
     import asyncio

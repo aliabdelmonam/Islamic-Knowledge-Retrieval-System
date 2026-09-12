@@ -6,6 +6,10 @@ from typing import Any, Optional
 from app.core import settings
 from pydantic import BaseModel
 
+from app.core import get_logger
+
+logger = get_logger(__name__)
+
 def _extract_text(content: Any) -> str:
     """AIMessage.content can be a plain string or a list of content
     blocks (e.g. [{"type": "text", "text": "..."}]) depending on the
@@ -73,7 +77,19 @@ class CohereClient(GenerationClient):
                 result = await structured_llm.ainvoke(lc_messages)
                 raw_ai_message = result["raw"]
                 parsed = result["parsed"]
-                text = parsed.model_dump_json() if isinstance(parsed, BaseModel) else str(parsed)
+
+                if parsed is None:
+                    raw_content = _extract_text(raw_ai_message.content) if raw_ai_message else "<no raw message>"
+                    logger.error(
+                        "Structured output parsing failed for schema %s. Raw model output: %r",
+                        output_schema.__name__, raw_content,
+                    )
+                    raise ProviderError(
+                        self.provider_name,
+                        ValueError(f"Structured output parsing failed for schema {output_schema.__name__}"),
+                    )
+
+                text = parsed.model_dump_json()
             else:
                 raw_ai_message = await llm.ainvoke(lc_messages)
                 text = _extract_text(raw_ai_message.content)

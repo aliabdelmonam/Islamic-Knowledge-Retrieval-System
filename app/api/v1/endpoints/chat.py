@@ -15,11 +15,13 @@ from app.providers import Message
 from app.schemas.request import ChatRequest
 from app.schemas.response import ChatResponse
 from app.services.query_rewriter import rewrite_query
+from langsmith import traceable
+from app.agents.triage_agent import _NON_ISLAMIC_RESPONSE
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-
+@traceable(name="chat_request")
 @router.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(body: ChatRequest, request: Request) -> ChatResponse:
     state = request.app.state
@@ -36,6 +38,17 @@ async def chat_endpoint(body: ChatRequest, request: Request) -> ChatResponse:
         new_query = await rewrite_query(query = body.message, llm = state.task_llm, temperature=0.2, history=short_history)
 
         triage = await state.triage_agent.classify(new_query, conversation_history=[])
+
+        if triage.is_non_islamic:
+            answer = _NON_ISLAMIC_RESPONSE
+            return ChatResponse(
+                    answer=answer,
+                    sources=used_sources,
+                    categories=triage.categories,
+                    chitchat_type=triage.chitchat_type,
+                    needs_clarification=False,
+                    session_id=session_id,
+                )
     except Exception as exc:
         logger.exception("Triage error: %s", exc)
         raise LLMError(str(exc)) from exc

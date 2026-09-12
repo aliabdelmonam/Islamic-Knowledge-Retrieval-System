@@ -41,9 +41,25 @@ INSUFFICIENT_EVIDENCE_MESSAGE = (
 def _build_context(docs: list[RetrievedDocument]) -> str:
     blocks = []
     for i, doc in enumerate(docs, 1):
-        ref = doc.source_ref or doc.metadata.get("title", "")
+        title = doc.metadata.get("title", "")
+        question = doc.metadata.get("question", "")
+        answer = doc.text 
+        # meta_line = ""
+        # if doc.metadata:
+            # meta_parts = [
+                # f"{key}: {value}"
+                # for key, value in doc.metadata.items()
+                # if value not in (None, "", [])
+            # ]
+            # if meta_parts:
+                # meta_line = f"\n({', '.join(meta_parts)})"
+        # blocks.append(
+            # f"[{i}] (الفئة: {doc.category.value}, ){meta_line}\n{doc.text}"
+        # )
         blocks.append(
-            f"[{i}] (الفئة: {doc.category.value}, المصدر: {ref})\n{doc.text}"
+            f"العنوان: {title}\n"
+            f"السؤال: {question}\n"
+            f"الإجابة: {answer}\n"
         )
     return "\n\n".join(blocks)
 

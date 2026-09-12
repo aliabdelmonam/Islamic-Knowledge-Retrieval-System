@@ -423,12 +423,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const DUMMY_MESSAGES = [
-        "جاري إرسال الطلب...",
-        "جاري البحث عن أحاديث...",
-        "جاري الكشف عن جودة الأحاديث...",
-        "جاري صياغة الإجابة...",
-        "يرجى الانتظار قليلاً..."
-    ];
+        "سبحان الله",
+        "الحمد لله",
+        "الله أكبر",
+        "لا إله إلا الله",
+        "اللهم صل على محمد",
+        "استغفر الله",
+        "اللهم اجعلنا من الصالحين",];
 
     // Loading indicator renderer
     function appendLoadingBubble() {
@@ -487,21 +488,21 @@ document.addEventListener("DOMContentLoaded", () => {
         bubble.dataset.mode = sourceMode ? "retrieve" : "ask";
 
         let sourcesHTML = "";
-        if (data.sources && data.sources.length > 0) {
-            sourcesHTML = `
-                <div class="source-document-details">
-                    <div class="sources-title">المصادر والأحاديث المستند إليها:</div>
-                    ${data.sources.map((src, i) => `
-                        <div class="source-item">
-                            [${i + 1}] <strong>الحديث:</strong> ${escapeHTML(src.hadith)} <br>
-                            <strong>الحكم:</strong> <span style="color: var(--gold-bright)">${escapeHTML(src.hokm)}</span> |
-                            <strong>الراوي:</strong> ${escapeHTML(src.rawy)} |
-                            <strong>المصدر:</strong> ${escapeHTML(src.source)}
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-        }
+        // if (data.sources && data.sources.length > 0) {
+        //     sourcesHTML = `
+        //         <div class="source-document-details">
+        //             <div class="sources-title">المصادر والأحاديث المستند إليها:</div>
+        //             ${data.sources.map((src, i) => `
+        //                 <div class="source-item">
+        //                     [${i + 1}] <strong>الحديث:</strong> ${escapeHTML(src.hadith)} <br>
+        //                     <strong>الحكم:</strong> <span style="color: var(--gold-bright)">${escapeHTML(src.hokm)}</span> |
+        //                     <strong>الراوي:</strong> ${escapeHTML(src.rawy)} |
+        //                     <strong>المصدر:</strong> ${escapeHTML(src.source)}
+        //                 </div>
+        //             `).join('')}
+        //         </div>
+        //     `;
+        // }
 
         let queryRewrittenHTML = "";
         if (data.query_rewritten) {
